@@ -2,6 +2,10 @@ package com.example.loginproject.ui.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.loginproject.data.remote.api.ApiService
+import com.example.loginproject.data.remote.request.RegisterRequest
+import com.example.loginproject.di.RepositoryModule
+import com.example.loginproject.repository.ApiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,36 +15,17 @@ import javax.inject.Inject
 
 
 
-sealed class RegisterResult {
-    object Success : RegisterResult()
-    data class Error(val message: String) : RegisterResult()
-}
-
-interface RegisterRepository {
-    suspend fun register(
-        fullName: String,
-        username: String,
-        email: String,
-        password: String
-    ): RegisterResult
-}
-
-/*
- * ==========================================================================
- * ViewModel
- * ==========================================================================
- */
-
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val repository: RegisterRepository
-) : ViewModel() {
+    private val apiRepository: ApiRepository
+) : ViewModel()
+{
 
     private val _fullName = MutableStateFlow("")
     val fullName: StateFlow<String> = _fullName
 
-    private val _username = MutableStateFlow("")
-    val username: StateFlow<String> = _username
+    private val _phoneNumber = MutableStateFlow("")
+    val phoneNumber = _phoneNumber
 
     private val _email = MutableStateFlow("")
     val email: StateFlow<String> = _email
@@ -65,9 +50,8 @@ class RegisterViewModel @Inject constructor(
         _errorMessage.value = null
     }
 
-    fun onUsernameChanged(value: String) {
-        _username.value = value
-        _errorMessage.value = null
+    fun onPhoneNumberChanged(value:String){
+        _phoneNumber.value=value
     }
 
     fun onEmailChanged(value: String) {
@@ -86,38 +70,74 @@ class RegisterViewModel @Inject constructor(
     }
 
     fun onCreateAccountClick() {
+
         val validationError = validate()
-        if (validationError != null) {
+
+        if(validationError != null){
+
             _errorMessage.value = validationError
             return
+
         }
+
 
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
 
-            when (val result = repository.register(
-                fullName = _fullName.value.trim(),
-                username = _username.value.trim(),
-                email = _email.value.trim(),
-                password = _password.value
-            )) {
-                is RegisterResult.Success -> {
-                    _isLoading.value = false
-                    _isRegisterSuccess.value = true
+
+            try {
+
+                _isLoading.value=true
+
+
+                val response = apiRepository.register(
+
+                    RegisterRequest(
+
+                        fullName = _fullName.value,
+
+                        phoneNumber = _phoneNumber.value,
+
+                        email = _email.value,
+
+                        password = _password.value
+
+                    )
+
+                )
+
+
+                if(response.isSuccessful){
+
+                    _isRegisterSuccess.value=true
+
+                }else{
+
+                    _errorMessage.value =
+                        "ثبت نام انجام نشد"
+
                 }
-                is RegisterResult.Error -> {
-                    _isLoading.value = false
-                    _errorMessage.value = result.message
-                }
+
+
+            }catch(e:Exception){
+
+                _errorMessage.value =
+                    e.message
+
             }
+            finally {
+
+                _isLoading.value=false
+
+            }
+
         }
+
     }
 
     private fun validate(): String? {
         return when {
             _fullName.value.isBlank() -> "لطفاً نام کامل رو وارد کن"
-            _username.value.isBlank() -> "لطفاً یوزرنیم رو وارد کن"
+            _phoneNumber.value.isBlank() -> "لطفاً تلفن رو وارد کن"
             _email.value.isBlank() -> "لطفاً ایمیل رو وارد کن"
             _password.value.length < 6 -> "رمز عبور باید حداقل ۶ کاراکتر باشه"
             _password.value != _confirmPassword.value -> "رمز عبور و تکرار اون یکی نیستن"

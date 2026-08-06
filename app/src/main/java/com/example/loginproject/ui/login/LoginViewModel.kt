@@ -2,6 +2,7 @@ package com.example.loginproject.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.loginproject.repository.ApiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +12,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-
+    private val repository: ApiRepository
 ) : ViewModel() {
 
     private val _email = MutableStateFlow("")
@@ -60,26 +61,39 @@ class LoginViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
 
-            // TODO: اینجا فراخوانی واقعی لاگین (Repository/UseCase) رو بذار
-            delay(1200) // شبیه‌سازی تأخیر شبکه — بعداً حذفش کن
+            _isLoading.value = true
+
+            val response = repository.login(
+
+                _email.value,
+
+                _password.value
+
+            )
 
             _isLoading.value = false
 
-            // TODO: بر اساس نتیجه واقعی، یا onLoginSuccess رو صدا بزن یا خطا نشون بده
-            // مثال:
-            // val result = loginUseCase(currentEmail, currentPassword)
-            // if (result.isSuccess) onLoginSuccess() else _errorMessage.value = result.errorText
+            if(response.isSuccessful){
+
+                val body = response.body()
+
+                // اینجا دیتاها رو داری
+
+            }else{
+
+                _errorMessage.value = "نام کاربری یا رمز اشتباه است"
+
+            }
+
         }
     }
 
     fun onForgotPasswordClick() {
-        // TODO: نویگیت به صفحه فراموشی رمز عبور
+
     }
 
     fun onNeedHelpClick() {
-        // TODO: نویگیت به صفحه راهنما/پشتیبانی
+
     }
 }

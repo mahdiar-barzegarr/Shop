@@ -65,7 +65,7 @@ fun RegisterScreen(
     navController: NavController,
     ) {
     val fullName by viewModel.fullName.collectAsStateWithLifecycle()
-    val username by viewModel.username.collectAsStateWithLifecycle()
+    val username by viewModel.phoneNumber.collectAsStateWithLifecycle()
     val email by viewModel.email.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
     val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
@@ -178,7 +178,7 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = username,
-            onValueChange = viewModel::onUsernameChanged,
+            onValueChange = viewModel::onPhoneNumberChanged,
             placeholder = { Text("Choose a username", color = TextGray) },
             leadingIcon = {
                 Icon(
