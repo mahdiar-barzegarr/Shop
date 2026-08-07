@@ -59,6 +59,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
 
+    //Data Store
+    implementation(libs.androidx.datastore.preferences)
 
     // Retrofit
     implementation(libs.retrofit)

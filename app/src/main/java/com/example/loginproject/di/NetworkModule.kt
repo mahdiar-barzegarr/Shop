@@ -13,16 +13,18 @@ import retrofit2.converter.gson.GsonConverterFactory
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+
+    private const val BASE_URL = "http://192.168.1.102:8000/accounts/api/v1/"
     @Provides
     @Singleton
     fun provideRetrofit(): Retrofit {
 
+
         return Retrofit.Builder()
-
-            .baseUrl("http://127.0.0.1:8000/accounts/")
-
-            .addConverterFactory(GsonConverterFactory.create())
-
+            .baseUrl(BASE_URL)
+            .addConverterFactory(
+                GsonConverterFactory.create()
+            )
             .build()
 
     }
@@ -30,10 +32,8 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideApi(
-
+    fun provideAuthApi(
         retrofit: Retrofit
-
     ): ApiService {
 
         return retrofit.create(ApiService::class.java)

@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 
 private val BrandPurple = Color(0xFF5B4FE9)
 private val TextDark = Color(0xFF1A1A2E)
@@ -65,8 +64,7 @@ fun RegisterScreen(
     navController: NavController,
     ) {
     val fullName by viewModel.fullName.collectAsStateWithLifecycle()
-    val username by viewModel.phoneNumber.collectAsStateWithLifecycle()
-    val email by viewModel.email.collectAsStateWithLifecycle()
+    val phoneNumber by viewModel.phoneNumber.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
     val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -76,9 +74,8 @@ fun RegisterScreen(
 
     LaunchedEffect(isRegisterSuccess) {
         if (isRegisterSuccess) {
-            onRegisterSuccess()
-            navController.navigate("login") {
-                popUpTo("login") { inclusive = true }
+            navController.navigate("home") {
+                popUpTo("register") { inclusive = true }
             }
         }
     }
@@ -174,12 +171,12 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        FieldLabel("Username")
+        FieldLabel("Phone number")
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
-            value = username,
+            value = phoneNumber,
             onValueChange = viewModel::onPhoneNumberChanged,
-            placeholder = { Text("Choose a username", color = TextGray) },
+            placeholder = { Text("09131111111", color = TextGray) },
             leadingIcon = {
                 Icon(
                     Icons.Filled.AlternateEmail,
@@ -190,26 +187,14 @@ fun RegisterScreen(
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             colors = fieldColors(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Phone
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        FieldLabel("Email")
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = email,
-            onValueChange = viewModel::onEmailChanged,
-            placeholder = { Text("name@company.com", color = TextGray) },
-            leadingIcon = { Icon(Icons.Filled.Mail, contentDescription = null, tint = TextGray) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            shape = RoundedCornerShape(14.dp),
-            colors = fieldColors(),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         FieldLabel("Password")
         Spacer(modifier = Modifier.height(8.dp))

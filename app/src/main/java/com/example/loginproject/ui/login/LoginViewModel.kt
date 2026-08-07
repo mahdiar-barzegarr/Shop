@@ -2,9 +2,10 @@ package com.example.loginproject.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.loginproject.data.local.TokenManager
+import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.repository.ApiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,11 +13,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val repository: ApiRepository
+    private val repository: ApiRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
-    private val _email = MutableStateFlow("")
-    val email: StateFlow<String> = _email
+    private val _phoneNumber = MutableStateFlow("")
+    val phoneNumber: StateFlow<String> = _phoneNumber
 
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password
@@ -33,8 +35,12 @@ class LoginViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    fun onEmailChanged(value: String) {
-        _email.value = value
+    // این چیزیه که اضافه شد؛ وقتی true بشه، Screen نویگیت می‌کنه
+    private val _isLoginSuccess = MutableStateFlow(false)
+    val isLoginSuccess: StateFlow<Boolean> = _isLoginSuccess
+
+    fun onPhoneNumberChanged(value: String) {
+        _phoneNumber.value = value
         _errorMessage.value = null
     }
 
@@ -52,48 +58,57 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onLoginClick() {
-        val currentEmail = _email.value.trim()
+        val currentPhone = _phoneNumber.value.trim()
         val currentPassword = _password.value
 
-        if (currentEmail.isEmpty() || currentPassword.isEmpty()) {
-            _errorMessage.value = "لطفاً ایمیل و رمز عبور رو وارد کن"
+        if (currentPhone.isEmpty() || currentPassword.isEmpty()) {
+            _errorMessage.value = "لطفاً شماره موبایل و رمز عبور رو وارد کن"
             return
         }
 
         viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
 
-            _isLoading.value = true
+                val response = repository.login(
+                    LoginRequest(
+                        currentPhone,
+                        currentPassword
+                    )
+                )
 
-            val response = repository.login(
-
-                _email.value,
-
-                _password.value
-
-            )
-
-            _isLoading.value = false
-
-            if(response.isSuccessful){
-
-                val body = response.body()
-
-                // اینجا دیتاها رو داری
-
-            }else{
-
-                _errorMessage.value = "نام کاربری یا رمز اشتباه است"
-
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.access != null && body.refresh != null) {
+                        tokenManager.saveSession(
+                            accessToken = body.access,
+                            refreshToken = body.refresh,
+                            phoneNumber = currentPhone
+                        )
+                        body.full_name?.let { tokenManager.saveFullName(it) }
+                    }
+                    _isLoginSuccess.value = true
+                } else {
+                    _errorMessage.value = when (response.code()) {
+                        400, 401 -> "شماره موبایل یا رمز عبور اشتباهه"
+                        else -> "خطا در ورود (کد ${response.code()})"
+                    }
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "اتصال برقرار نشد. اینترنت یا آدرس سرور رو چک کن"
+            } finally {
+                _isLoading.value = false
             }
-
         }
     }
 
     fun onForgotPasswordClick() {
-
+        // TODO
     }
 
     fun onNeedHelpClick() {
-
+        // TODO
     }
 }
+

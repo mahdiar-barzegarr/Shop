@@ -2,6 +2,7 @@ package com.example.loginproject.ui.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.loginproject.data.local.TokenManager
 import com.example.loginproject.data.remote.api.ApiService
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.di.RepositoryModule
@@ -17,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val apiRepository: ApiRepository
+    private val apiRepository: ApiRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel()
 {
 
@@ -26,9 +28,6 @@ class RegisterViewModel @Inject constructor(
 
     private val _phoneNumber = MutableStateFlow("")
     val phoneNumber = _phoneNumber
-
-    private val _email = MutableStateFlow("")
-    val email: StateFlow<String> = _email
 
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password
@@ -52,11 +51,6 @@ class RegisterViewModel @Inject constructor(
 
     fun onPhoneNumberChanged(value:String){
         _phoneNumber.value=value
-    }
-
-    fun onEmailChanged(value: String) {
-        _email.value = value
-        _errorMessage.value = null
     }
 
     fun onPasswordChanged(value: String) {
@@ -97,8 +91,6 @@ class RegisterViewModel @Inject constructor(
 
                         phoneNumber = _phoneNumber.value,
 
-                        email = _email.value,
-
                         password = _password.value
 
                     )
@@ -106,15 +98,19 @@ class RegisterViewModel @Inject constructor(
                 )
 
 
-                if(response.isSuccessful){
-
-                    _isRegisterSuccess.value=true
-
-                }else{
-
-                    _errorMessage.value =
-                        "ثبت نام انجام نشد"
-
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.access != null && body.refresh != null) {
+                        tokenManager.saveSession(
+                            accessToken = body.access,
+                            refreshToken = body.refresh,
+                            phoneNumber = body.data?.phone_number ?: _phoneNumber.value.trim()
+                        )
+                        body.data?.full_name?.let { tokenManager.saveFullName(it) }
+                    }
+                    _isRegisterSuccess.value = true
+                } else {
+                    _errorMessage.value = "ثبت‌نام انجام نشد"
                 }
 
 
@@ -138,7 +134,6 @@ class RegisterViewModel @Inject constructor(
         return when {
             _fullName.value.isBlank() -> "لطفاً نام کامل رو وارد کن"
             _phoneNumber.value.isBlank() -> "لطفاً تلفن رو وارد کن"
-            _email.value.isBlank() -> "لطفاً ایمیل رو وارد کن"
             _password.value.length < 6 -> "رمز عبور باید حداقل ۶ کاراکتر باشه"
             _password.value != _confirmPassword.value -> "رمز عبور و تکرار اون یکی نیستن"
             else -> null

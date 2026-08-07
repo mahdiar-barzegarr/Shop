@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,11 +60,21 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
     navController: NavController,
 ) {
-    val email by viewModel.email.collectAsStateWithLifecycle()
+    val phoneNumber by viewModel.phoneNumber.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
     val isPasswordVisible by viewModel.isPasswordVisible.collectAsStateWithLifecycle()
     val rememberMe by viewModel.rememberMe.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val isLoginSuccess by viewModel.isLoginSuccess.collectAsStateWithLifecycle()
+
+    LaunchedEffect(isLoginSuccess) {
+        if (isLoginSuccess) {
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -130,17 +142,17 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        FieldLabel(text = "Email or username")
+        FieldLabel(text = "Phone number")
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
-            value = email,
-            onValueChange = viewModel::onEmailChanged,
-            placeholder = { Text("name@company.com", color = TextGray) },
+            value = phoneNumber,
+            onValueChange = viewModel::onPhoneNumberChanged,
+            placeholder = { Text("09XXXXXXXXX", color = TextGray) },
             leadingIcon = {
-                Icon(Icons.Filled.Mail, contentDescription = null, tint = TextGray)
+                Icon(Icons.Filled.Phone, contentDescription = null, tint = TextGray)
             },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             shape = RoundedCornerShape(14.dp),
             colors = fieldColors(),
             modifier = Modifier.fillMaxWidth()
@@ -187,9 +199,13 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        errorMessage?.let { msg ->
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = msg, color = Color(0xFFE0483F), fontSize = 12.sp)
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Remember me
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable { viewModel.onRememberMeChanged(!rememberMe) }
@@ -204,7 +220,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // دکمه لاگین
         Button(
             onClick = viewModel::onLoginClick,
             enabled = !isLoading,
@@ -260,3 +275,4 @@ private fun fieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = Color.White,
     focusedContainerColor = Color.White
 )
+

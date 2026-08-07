@@ -12,12 +12,11 @@ import jakarta.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
 
+
     @Provides
     @Singleton
-    fun provideRepository(
-
+    fun provideApiRepository(
         api: ApiService
-
     ): ApiRepository {
 
         return ApiRepository(api)

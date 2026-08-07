@@ -1,6 +1,5 @@
 package com.example.loginproject.ui.splash
 
-import android.app.Application
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -15,11 +14,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,17 +50,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
+
 private val GradientTop = Color(0xFF5B4FE9)
 private val GradientBottom = Color(0xFF8B5CF6)
 
@@ -71,13 +63,14 @@ fun SplashScreen(
     navController: NavController,
 ) {
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val startDestination by viewModel.startDestination.collectAsStateWithLifecycle()
 
 
-    androidx.compose.runtime.LaunchedEffect(isConnected) {
-        if (isConnected == true) {
+    LaunchedEffect(startDestination) {
+        startDestination?.let { destination ->
             delay(400)
-            navController.navigate("login") {
-                popUpTo("login") { inclusive = true }
+            navController.navigate(destination) {
+                popUpTo("splash") { inclusive = true }
             }
         }
     }
@@ -265,5 +258,6 @@ private fun LoadingDots(
         }
     }
 }
+
 
 
