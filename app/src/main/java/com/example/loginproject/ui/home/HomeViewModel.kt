@@ -26,7 +26,8 @@ import javax.inject.Inject
 data class CategoryItem(
     val id: String,
     val label: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val category: Int
 )
 
 data class ProductItem(
@@ -60,7 +61,6 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        // TODO: باید دقیقاً همون آی‌پی/آدرسی باشه که توی NetworkModule برای BASE_URL استفاده کردی
         private const val SERVER_HOST = "http://192.168.1.102:8000"
     }
 
@@ -82,14 +82,13 @@ class HomeViewModel @Inject constructor(
     )
     val banner: StateFlow<PromoBanner> = _banner
 
-    // دسته‌بندی هنوز از سرور جدا نمی‌گیریم، فعلاً نمونه‌ست
-    // TODO: وقتی endpoint دسته‌بندی رو گرفتی، همینجا با repository.getCategories() پرش کن
+
     private val _categories = MutableStateFlow(
         listOf(
-            CategoryItem("bags", "Bags", Icons.Outlined.ShoppingBag),
-            CategoryItem("shoes", "Shoes", Icons.Filled.DirectionsRun),
-            CategoryItem("beauty", "Beauty", Icons.Filled.Spa),
-            CategoryItem("tech", "Tech", Icons.Filled.Headphones)
+            CategoryItem("bags", "Bags", Icons.Outlined.ShoppingBag,0),
+            CategoryItem("shoes", "Shoes", Icons.Filled.DirectionsRun,0),
+            CategoryItem("beauty", "Beauty", Icons.Filled.Spa,0),
+            CategoryItem("tech", "Tech", Icons.Filled.Headphones,0)
         )
     )
     val categories: StateFlow<List<CategoryItem>> = _categories

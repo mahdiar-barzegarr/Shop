@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph
 import coil.compose.AsyncImage
 
 private val BrandPurple = Color(0xFF5B4FE9)
@@ -89,8 +90,27 @@ fun HomeScreen(
         bottomBar = {
             HomeBottomBar(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
-                // TODO: هر تب رو بعداً به navController.navigate("...") وصل کن
+                onTabSelected = { tab->
+                    selectedTab = tab
+
+                    when (tab) {
+
+                        0 -> {
+                            navController.navigate("home") {
+                                popUpTo("splash") { inclusive = true }
+                            }
+                        }
+
+                        1 -> {
+                            navController.navigate("category") {
+                                popUpTo("splash") { inclusive = true }
+                            }
+                        }
+
+                    }
+
+                }
+
             )
         }
     ) { innerPadding ->
@@ -153,7 +173,13 @@ fun HomeScreen(
                     value = searchQuery,
                     onValueChange = viewModel::onSearchQueryChanged,
                     placeholder = { Text("Search bags, shoes, tech...", color = TextGray) },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextGray) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = null,
+                            tint = TextGray
+                        )
+                    },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -256,11 +282,19 @@ private fun PromoBannerCard(banner: PromoBanner, onExploreClick: () -> Unit) {
         Column {
             Text(text = banner.title, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = banner.subtitle, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = banner.subtitle,
+                color = Color.White,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(modifier = Modifier.height(14.dp))
             Button(
                 onClick = onExploreClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BrandPurple),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = BrandPurple
+                ),
                 shape = RoundedCornerShape(50),
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
             ) {
@@ -327,9 +361,19 @@ private fun ProductCard(product: ProductItem, onClick: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = product.name, color = TextDark, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text(
+            text = product.name,
+            color = TextDark,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
         Spacer(modifier = Modifier.height(2.dp))
-        Text(text = product.price, color = BrandPurple, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = product.price,
+            color = BrandPurple,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
@@ -359,17 +403,32 @@ private fun NewArrivalRow(item: NewArrivalItem, onClick: () -> Unit) {
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
             } else {
-                Icon(imageVector = item.icon, contentDescription = null, tint = BrandPurple, modifier = Modifier.size(22.dp))
+                Icon(
+                    imageVector = item.icon,
+                    contentDescription = null,
+                    tint = BrandPurple,
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = item.name, color = TextDark, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = item.name,
+                color = TextDark,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
             Text(text = item.description, color = TextGray, fontSize = 12.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = item.price, color = BrandPurple, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = item.price,
+                color = BrandPurple,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
 
         Icon(
@@ -382,7 +441,7 @@ private fun NewArrivalRow(item: NewArrivalItem, onClick: () -> Unit) {
 }
 
 @Composable
-private fun HomeBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+fun HomeBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     data class Tab(val icon: ImageVector, val label: String)
 
     val tabs = listOf(
