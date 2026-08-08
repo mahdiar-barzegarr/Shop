@@ -1,5 +1,7 @@
 package com.example.loginproject.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -12,6 +14,7 @@ import com.example.loginproject.ui.register.RegisterScreen
 import com.example.loginproject.ui.splash.SplashScreen
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavigationGraph(
     navController: NavController = rememberNavController()
