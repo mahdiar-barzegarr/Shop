@@ -4,6 +4,7 @@ import com.example.loginproject.data.remote.api.ApiService
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.data.remote.response.CategoryDto
+import com.example.loginproject.data.remote.response.ProductDetailResponse
 import com.example.loginproject.data.remote.response.ProductListResponse
 import com.example.loginproject.data.remote.response.ProfileResponse
 import com.example.loginproject.models.LoginResponseModel
@@ -44,8 +45,8 @@ class ApiRepository @Inject constructor(
     suspend fun getProducts(): Response<ProductListResponse> = api.getProducts()
 
 
-    suspend fun getProductDetail(productId: Int): Response<ProductDetailDto> {
-        val url = "${ApiService.PRODUCT_DETAIL_BASE}$productId/?id=$productId"
+    suspend fun getProductDetail(productId: Int): Response<ProductDetailResponse> {
+        val url = "${ApiService.PRODUCT_DETAIL_BASE}$productId"
         return api.getProductDetail(url)
     }
 

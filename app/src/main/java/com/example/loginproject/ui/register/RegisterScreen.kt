@@ -79,7 +79,6 @@ fun RegisterScreen(
             }
         }
     }
-    // 👆 پایان محل نویگیشن 👆
 
     Column(
         modifier = Modifier

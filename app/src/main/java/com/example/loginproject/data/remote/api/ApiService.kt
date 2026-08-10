@@ -3,6 +3,7 @@ package com.example.loginproject.data.remote.api
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.data.remote.response.CategoryDto
+import com.example.loginproject.data.remote.response.ProductDetailResponse
 import com.example.loginproject.data.remote.response.ProductListResponse
 import com.example.loginproject.data.remote.response.ProfileResponse
 import com.example.loginproject.models.LoginResponseModel
@@ -38,7 +39,7 @@ interface ApiService {
     }
 
     @GET
-    suspend fun getProductDetail(@Url url: String): Response<ProductDetailDto>
+    suspend fun getProductDetail(@Url url: String): Response<ProductDetailResponse>
 
     @GET
     suspend fun getCategories(@Url url: String = CATEGORIES_URL): Response<List<CategoryDto>>

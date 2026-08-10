@@ -225,26 +225,23 @@ fun HomeScreen(
                     items(popularProducts, key = { it.id }) { product ->
                         ProductCard(
                             product = product,
-                            onClick = { /* TODO: navController.navigate("product/${product.id}") */ }
+                            onClick = { navController.navigate("product_detail/${product.id}") }
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // عنوان بخش آخر
             item {
                 SectionHeader(title = "New arrivals", onSeeAllClick = { /* TODO */ })
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // 👇 دقیقاً همینجاست که گسترش‌پذیریش معنا پیدا می‌کنه:
-            // هر آیتم اینجا جدا compose میشه، پس چه ۱ تا باشه چه ۱۰۰۰ تا،
-            // فقط چیزی که روی صفحه دیده میشه رندر میشه (نه همه‌ی لیست یهو)
+
             items(newArrivals, key = { it.id }) { item ->
                 NewArrivalRow(
                     item = item,
-                    onClick = { /* TODO: navController.navigate("product/${item.id}") */ }
+                    onClick = { navController.navigate("product_detail/${item.id}") }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
