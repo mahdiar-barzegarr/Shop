@@ -2,6 +2,7 @@ package com.example.loginproject.data.remote.api
 
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
+import com.example.loginproject.data.remote.response.CategoryDto
 import com.example.loginproject.data.remote.response.ProductListResponse
 import com.example.loginproject.data.remote.response.ProfileResponse
 import com.example.loginproject.models.LoginResponseModel
@@ -31,9 +32,16 @@ interface ApiService {
 
 
     companion object {
-        // TODO: وقتی روی سرور واقعی رفت (نه لوکال)، فقط همینجا رو عوض کن
         const val PRODUCTS_URL = "http://192.168.1.102:8000/products/api/v1/get_products/"
+        const val CATEGORIES_URL = "http://192.168.1.102:8000/products/api/v1/get_categories/"
+        const val PRODUCT_DETAIL_BASE = "http://192.168.1.102:8000/products/api/v1/get_product_detail/"
     }
+
+    @GET
+    suspend fun getProductDetail(@Url url: String): Response<ProductDetailDto>
+
+    @GET
+    suspend fun getCategories(@Url url: String = CATEGORIES_URL): Response<List<CategoryDto>>
 
     @GET
     suspend fun getProducts(@Url url: String = PRODUCTS_URL): Response<ProductListResponse>

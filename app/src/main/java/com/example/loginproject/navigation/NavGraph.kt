@@ -8,7 +8,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.loginproject.ui.category.CategoryScreen
+import com.example.loginproject.ui.category.CategoriesScreen
+
 import com.example.loginproject.ui.home.HomeScreen
 import com.example.loginproject.ui.login.LoginScreen
 import com.example.loginproject.ui.register.RegisterScreen
@@ -27,6 +28,6 @@ fun NavigationGraph(
         composable("login") { LoginScreen(navController = navController) }
         composable("register") { RegisterScreen({},{},{}, navController = navController) }
         composable("home") { HomeScreen(navController = navController) }
-        composable("category") { CategoryScreen(navController = navController) }
+        composable("category") { CategoriesScreen(navController = navController) }
     }
 }

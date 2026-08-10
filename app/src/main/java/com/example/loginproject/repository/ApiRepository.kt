@@ -3,10 +3,9 @@ package com.example.loginproject.repository
 import com.example.loginproject.data.remote.api.ApiService
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
+import com.example.loginproject.data.remote.response.CategoryDto
 import com.example.loginproject.data.remote.response.ProductListResponse
 import com.example.loginproject.data.remote.response.ProfileResponse
-import com.example.loginproject.data.remote.response.RegisterResponse
-import com.example.loginproject.models.LoginModel
 import com.example.loginproject.models.LoginResponseModel
 import com.example.loginproject.models.RefreshRequest
 import com.example.loginproject.models.RefreshResponseModel
@@ -45,10 +44,18 @@ class ApiRepository @Inject constructor(
     suspend fun getProducts(): Response<ProductListResponse> = api.getProducts()
 
 
+    suspend fun getProductDetail(productId: Int): Response<ProductDetailDto> {
+        val url = "${ApiService.PRODUCT_DETAIL_BASE}$productId/?id=$productId"
+        return api.getProductDetail(url)
+    }
+
+
     suspend fun getProfile(): Response<ProfileResponse> = api.getProfile()
 
 
     suspend fun refreshToken(refresh: String): Response<RefreshResponseModel> =
         api.refreshToken(RefreshRequest(refresh))
 
+
+    suspend fun getCategories(): Response<List<CategoryDto>> = api.getCategories()
 }
