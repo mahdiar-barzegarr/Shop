@@ -4,6 +4,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -58,7 +61,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph
 import coil.compose.AsyncImage
 
 private val BrandPurple = Color(0xFF5B4FE9)
@@ -88,29 +90,17 @@ fun HomeScreen(
     Scaffold(
         containerColor = ScreenBg,
         bottomBar = {
-            HomeBottomBar(
+            AppBottomBar(
                 selectedTab = selectedTab,
-                onTabSelected = { tab->
-                    selectedTab = tab
-
-                    when (tab) {
-
-                        0 -> {
-                            navController.navigate("home") {
-                                popUpTo("splash") { inclusive = true }
-                            }
-                        }
-
-                        1 -> {
-                            navController.navigate("category") {
-                                popUpTo("splash") { inclusive = true }
-                            }
-                        }
-
+                onTabSelected = { index ->
+                    selectedTab = index
+                    if (index == 1) {
+                        navController.navigate("category")
                     }
-
+                    else if (index == 3) {
+                        navController.navigate("cart")
+                    }
                 }
-
             )
         }
     ) { innerPadding ->
@@ -125,7 +115,6 @@ fun HomeScreen(
                 bottom = innerPadding.calculateBottomPadding() + 20.dp
             )
         ) {
-            // هدر: سلام + عنوان + زنگوله
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -161,25 +150,18 @@ fun HomeScreen(
                             tint = TextDark,
                             modifier = Modifier.size(20.dp)
                         )
-                        // TODO: اگه notificationCount > 0 بود، یه بج قرمز کوچیک گوشه‌ش نشون بده
+
                     }
                 }
                 Spacer(modifier = Modifier.height(18.dp))
             }
 
-            // سرچ بار
             item {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = viewModel::onSearchQueryChanged,
                     placeholder = { Text("Search bags, shoes, tech...", color = TextGray) },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription = null,
-                            tint = TextGray
-                        )
-                    },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextGray) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -193,31 +175,32 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // بنر تبلیغاتی
             item {
                 PromoBannerCard(banner = banner, onExploreClick = { /* TODO */ })
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // دسته‌بندی‌ها
             item {
+                val scrollState = rememberScrollState()
                 SectionHeader(title = "Shop by category", onSeeAllClick = { /* TODO */ })
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(scrollState),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     categories.forEach { category ->
                         CategoryChip(
                             category = category,
-                            onClick = { /* TODO: navController.navigate("category/${category.id}") */ }
+                            onClick = {
+                                val encodedName = java.net.URLEncoder.encode(category.label, "UTF-8")
+                                navController.navigate("category_products/${category.id}/$encodedName")
+                            }
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // محبوب‌ها — خودش یه ردیف افقی داخل آیتم لیزی‌کالمنه
             item {
                 SectionHeader(title = "Popular now", onSeeAllClick = { /* TODO */ })
                 Spacer(modifier = Modifier.height(12.dp))
@@ -237,11 +220,10 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-
             items(newArrivals, key = { it.id }) { item ->
                 NewArrivalRow(
                     item = item,
-                    onClick = { navController.navigate("product_detail/${item.id}") }
+                    onClick = { navController.navigate("product_detail/${item.id}")}
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
@@ -279,19 +261,11 @@ private fun PromoBannerCard(banner: PromoBanner, onExploreClick: () -> Unit) {
         Column {
             Text(text = banner.title, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = banner.subtitle,
-                color = Color.White,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = banner.subtitle, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(14.dp))
             Button(
                 onClick = onExploreClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = BrandPurple
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BrandPurple),
                 shape = RoundedCornerShape(50),
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
             ) {
@@ -358,19 +332,9 @@ private fun ProductCard(product: ProductItem, onClick: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = product.name,
-            color = TextDark,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Text(text = product.name, color = TextDark, fontSize = 13.sp, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = product.price,
-            color = BrandPurple,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        Text(text = product.price, color = BrandPurple, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -400,32 +364,17 @@ private fun NewArrivalRow(item: NewArrivalItem, onClick: () -> Unit) {
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
             } else {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = null,
-                    tint = BrandPurple,
-                    modifier = Modifier.size(22.dp)
-                )
+                Icon(imageVector = item.icon, contentDescription = null, tint = BrandPurple, modifier = Modifier.size(22.dp))
             }
         }
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.name,
-                color = TextDark,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Text(text = item.name, color = TextDark, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             Text(text = item.description, color = TextGray, fontSize = 12.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = item.price,
-                color = BrandPurple,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = item.price, color = BrandPurple, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
 
         Icon(
@@ -437,8 +386,9 @@ private fun NewArrivalRow(item: NewArrivalItem, onClick: () -> Unit) {
     }
 }
 
+
 @Composable
-fun HomeBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+fun AppBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     data class Tab(val icon: ImageVector, val label: String)
 
     val tabs = listOf(
@@ -467,5 +417,7 @@ fun HomeBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
         }
     }
 }
+
+
 
 

@@ -2,7 +2,7 @@ package com.example.loginproject.data.remote.response
 
 data class ProductDetailResponse(
     val id: Int,
-    val colors: List<String>,
+    val colors: List<ColorDto>,
     val images: List<ProductImageDto>,
     val name: String,
     val description: String,
@@ -14,7 +14,19 @@ data class ProductDetailResponse(
     val category: Int
 )
 
+data class ColorDto(
+    val id: Int,
+    val stock: Int,
+    val product: Int,
+    val name: String,
+    val code: String
+)
+
 data class ProductImageDto(
     val id: Int,
     val image: String
+)
+
+data class AddCartItemResponse(
+    val detail: String
 )

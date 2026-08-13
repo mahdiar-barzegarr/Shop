@@ -1,10 +1,14 @@
 package com.example.loginproject.repository
 
 import com.example.loginproject.data.remote.api.ApiService
+import com.example.loginproject.data.remote.request.AddCartItemRequest
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
+import com.example.loginproject.data.remote.request.UserCartResponse
+import com.example.loginproject.data.remote.response.AddCartItemResponse
 import com.example.loginproject.data.remote.response.CategoryDto
 import com.example.loginproject.data.remote.response.ProductDetailResponse
+import com.example.loginproject.data.remote.response.ProductDto
 import com.example.loginproject.data.remote.response.ProductListResponse
 import com.example.loginproject.data.remote.response.ProfileResponse
 import com.example.loginproject.models.LoginResponseModel
@@ -42,13 +46,48 @@ class ApiRepository @Inject constructor(
     }
 
 
-    suspend fun getProducts(): Response<ProductListResponse> = api.getProducts()
+    suspend fun getProducts(): Response<ProductListResponse> {
+        val allResults = mutableListOf<ProductDto>()
+        var nextUrl: String? = ApiService.PRODUCTS_URL
 
+        while (nextUrl != null) {
+            val response = api.getProducts(nextUrl)
+            if (!response.isSuccessful || response.body() == null) {
+                return response
+            }
+            val body = response.body()!!
+            allResults.addAll(body.results)
+            nextUrl = body.next
+        }
 
-    suspend fun getProductDetail(productId: Int): Response<ProductDetailResponse> {
-        val url = "${ApiService.PRODUCT_DETAIL_BASE}$productId"
-        return api.getProductDetail(url)
+        return Response.success(
+            ProductListResponse(
+                count = allResults.size,
+                next = null,
+                previous = null,
+                results = allResults
+            )
+        )
     }
+
+
+    suspend fun addItemToCart(variantId: Int, quantity: Int): Response<AddCartItemResponse> {
+        return api.addItemToCart(
+            request = AddCartItemRequest(
+                variant_id = variantId,
+                quantity = quantity
+            )
+        )
+    }
+
+
+    suspend fun getUserCart(): Response<UserCartResponse> = api.getUserCart()
+
+    suspend fun deleteCartItem(cartItemId: Int): Response<Unit> =
+        api.deleteCartItem(url = "${ApiService.DELETE_ITEM_BASE}$cartItemId/")
+
+    suspend fun getProductDetail(productId: Int): Response<ProductDetailResponse> =
+        api.getProductDetail(url = "${ApiService.PRODUCT_DETAIL_BASE}$productId/?id=$productId")
 
 
     suspend fun getProfile(): Response<ProfileResponse> = api.getProfile()

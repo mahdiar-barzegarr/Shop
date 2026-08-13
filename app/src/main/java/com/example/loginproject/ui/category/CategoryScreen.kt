@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.example.loginproject.ui.home.HomeBottomBar
+import com.example.loginproject.ui.home.AppBottomBar
 
 private val BrandPurple = Color(0xFF5B4FE9)
 private val TextDark = Color(0xFF1A1A2E)
@@ -64,12 +64,13 @@ fun CategoriesScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
 
+    // چون این صفحه از پایین‌بار انتخاب شده، تب فعلی همیشه "Categories" (اندیس ۱) هست
     var selectedTab by remember { mutableIntStateOf(1) }
 
     Scaffold(
         containerColor = ScreenBg,
         bottomBar = {
-            HomeBottomBar(
+            AppBottomBar(
                 selectedTab = selectedTab,
                 onTabSelected = { index ->
                     selectedTab = index
@@ -77,6 +78,8 @@ fun CategoriesScreen(
                         navController.navigate("home") {
                             popUpTo("home") { inclusive = true }
                         }
+                    } else if (index == 3) {
+                        navController.navigate("cart")
                     }
                 }
             )
@@ -127,7 +130,13 @@ fun CategoriesScreen(
                 value = searchQuery,
                 onValueChange = viewModel::onSearchQueryChanged,
                 placeholder = { Text("Search categories", color = TextGray) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextGray) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = null,
+                        tint = TextGray
+                    )
+                },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -164,7 +173,11 @@ fun CategoriesScreen(
                         items(categories, key = { it.id }) { category ->
                             CategoryCard(
                                 category = category,
-                                onClick = { /* TODO: navController.navigate("category_products/${category.id}") */ }
+                                onClick = {
+                                    val encodedName =
+                                        java.net.URLEncoder.encode(category.name, "UTF-8")
+                                    navController.navigate("category_products/${category.id}/$encodedName")
+                                }
                             )
                         }
                     }
@@ -207,3 +220,4 @@ private fun CategoryCard(category: CategoryCardItem, onClick: () -> Unit) {
         )
     }
 }
+

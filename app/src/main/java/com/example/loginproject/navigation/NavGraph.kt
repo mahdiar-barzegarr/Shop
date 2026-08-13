@@ -11,7 +11,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.loginproject.data.remote.response.ProductDetailResponse
+import com.example.loginproject.ui.cartPage.CartScreen
 import com.example.loginproject.ui.category.CategoriesScreen
+import com.example.loginproject.ui.categoryProducts.CategoryProductsScreen
 
 import com.example.loginproject.ui.home.HomeScreen
 import com.example.loginproject.ui.login.LoginScreen
@@ -39,5 +41,15 @@ fun NavigationGraph(
         ) {
             ProductDetailScreen(navController = navController)
         }
+        composable(
+            route = "category_products/{categoryId}/{categoryName}",
+            arguments = listOf(
+                navArgument("categoryId") { type = NavType.IntType },
+                navArgument("categoryName") { type = NavType.StringType }
+            )
+        ) {
+            CategoryProductsScreen(navController = navController)
+        }
+        composable("cart") { CartScreen(navController = navController, onClose = { navController.popBackStack() }, onCheckout = {}) }
     }
 }

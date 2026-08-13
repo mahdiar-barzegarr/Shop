@@ -37,7 +37,6 @@ class TokenManager @Inject constructor(
     val fullNameFlow: Flow<String?> =
         context.dataStore.data.map { it[Keys.FULL_NAME] }
 
-    // نسخه‌های بلاکینگ — چون TokenInterceptor و TokenAuthenticator سینک هستن (suspend نیستن)
     fun getAccessTokenBlocking(): String? = runBlocking { accessTokenFlow.first() }
     fun getRefreshTokenBlocking(): String? = runBlocking { refreshTokenFlow.first() }
 

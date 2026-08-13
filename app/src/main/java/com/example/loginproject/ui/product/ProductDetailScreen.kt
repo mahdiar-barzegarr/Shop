@@ -1,7 +1,13 @@
 package com.example.loginproject.ui.product
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
@@ -42,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -65,8 +71,10 @@ fun ProductDetailScreen(
     val product by viewModel.product.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
-    val quantity by viewModel.quantity.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    val isInCart by viewModel.isInCart.collectAsStateWithLifecycle()
+    val quantity by viewModel.quantity.collectAsStateWithLifecycle()
+    val isSyncingCart by viewModel.isSyncingCart.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = ScreenBg,
@@ -74,8 +82,13 @@ fun ProductDetailScreen(
             if (product != null) {
                 ProductBottomBar(
                     isFavorite = isFavorite,
+                    isInCart = isInCart,
+                    quantity = quantity,
+                    isSyncingCart = isSyncingCart,
                     onFavoriteClick = viewModel::toggleFavorite,
-                    onAddToCartClick = viewModel::onAddToCartClick
+                    onAddToCartClick = viewModel::onAddToCartClick,
+                    onIncreaseQuantity = viewModel::onIncreaseQuantity,
+                    onDecreaseQuantity = viewModel::onDecreaseQuantity
                 )
             }
         }
@@ -111,12 +124,9 @@ fun ProductDetailScreen(
             product != null -> {
                 ProductContent(
                     product = product!!,
-                    quantity = quantity,
                     isFavorite = isFavorite,
                     onBackClick = { navController.popBackStack() },
                     onFavoriteClick = viewModel::toggleFavorite,
-                    onIncreaseQuantity = viewModel::increaseQuantity,
-                    onDecreaseQuantity = viewModel::decreaseQuantity,
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -127,12 +137,9 @@ fun ProductDetailScreen(
 @Composable
 private fun ProductContent(
     product: ProductDetailUi,
-    quantity: Int,
     isFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
-    onIncreaseQuantity: () -> Unit,
-    onDecreaseQuantity: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -169,6 +176,14 @@ private fun ProductContent(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = if (product.isAvailable) "Ready to ship" else "Out of stock",
+                    color = TextGray,
+                    fontSize = 12.sp
+                )
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(text = "About this piece", color = TextDark, fontSize = 15.sp, fontWeight = FontWeight.Bold)
@@ -179,29 +194,6 @@ private fun ProductContent(
                     fontSize = 13.sp,
                     lineHeight = 20.sp
                 )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(text = "Quantity", color = TextDark, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            text = if (product.isAvailable) "Ready to ship" else "Out of stock",
-                            color = TextGray,
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    QuantityStepper(
-                        quantity = quantity,
-                        onIncrease = onIncreaseQuantity,
-                        onDecrease = onDecreaseQuantity
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -260,7 +252,6 @@ private fun ProductImagePager(
             Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "بازگشت", tint = TextDark)
         }
 
-        // دکمه علاقه‌مندی
         IconButton(
             onClick = onFavoriteClick,
             modifier = Modifier
@@ -277,7 +268,6 @@ private fun ProductImagePager(
             )
         }
 
-        // نقطه‌های نشون‌دهنده تصویر (فقط اگه بیشتر از یه عکس بود)
         if (imageUrls.size > 1) {
             Row(
                 modifier = Modifier
@@ -299,27 +289,16 @@ private fun ProductImagePager(
 }
 
 @Composable
-private fun QuantityStepper(quantity: Int, onIncrease: () -> Unit, onDecrease: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(CardBg)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        IconButton(onClick = onDecrease, modifier = Modifier.size(28.dp)) {
-            Icon(imageVector = Icons.Outlined.Remove, contentDescription = "کم کردن", tint = TextDark, modifier = Modifier.size(16.dp))
-        }
-        Text(text = quantity.toString(), color = BrandPurple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        IconButton(onClick = onIncrease, modifier = Modifier.size(28.dp)) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = "زیاد کردن", tint = TextDark, modifier = Modifier.size(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun ProductBottomBar(isFavorite: Boolean, onFavoriteClick: () -> Unit, onAddToCartClick: () -> Unit) {
+private fun ProductBottomBar(
+    isFavorite: Boolean,
+    isInCart: Boolean,
+    quantity: Int,
+    isSyncingCart: Boolean,
+    onFavoriteClick: () -> Unit,
+    onAddToCartClick: () -> Unit,
+    onIncreaseQuantity: () -> Unit,
+    onDecreaseQuantity: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,16 +321,123 @@ private fun ProductBottomBar(isFavorite: Boolean, onFavoriteClick: () -> Unit, o
             )
         }
 
-        Button(
-            onClick = onAddToCartClick,
-            colors = ButtonDefaults.buttonColors(containerColor = BrandPurple),
-            shape = RoundedCornerShape(16.dp),
-            contentPadding = PaddingValues(vertical = 14.dp),
+        AddToCartArea(
+            isInCart = isInCart,
+            quantity = quantity,
+            isSyncing = isSyncingCart,
+            onAddClick = onAddToCartClick,
+            onIncrease = onIncreaseQuantity,
+            onDecrease = onDecreaseQuantity,
             modifier = Modifier.weight(1f)
-        ) {
+        )
+    }
+}
+
+/**
+ * دقیقاً همون فضایی که دکمه "Add to cart" اشغال می‌کرد، الان دو حالت داره:
+ * - isInCart == false  -> دکمه "Add to cart"
+ * - isInCart == true   -> استپر تعداد (- / عدد / +) دقیقاً همون‌جا، با انیمیشن جابه‌جایی عمودی
+ */
+@Composable
+private fun AddToCartArea(
+    isInCart: Boolean,
+    quantity: Int,
+    isSyncing: Boolean,
+    onAddClick: () -> Unit,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AnimatedContent(
+        targetState = isInCart,
+        transitionSpec = {
+            (slideInVertically { height -> height } + androidx.compose.animation.fadeIn())
+                .togetherWith(slideOutVertically { height -> -height } + androidx.compose.animation.fadeOut())
+        },
+        label = "addToCartArea",
+        modifier = modifier
+    ) { inCart ->
+        if (inCart) {
+            QuantityStepperBar(
+                quantity = quantity,
+                isSyncing = isSyncing,
+                onIncrease = onIncrease,
+                onDecrease = onDecrease
+            )
+        } else {
+            AddToCartButton(
+                isLoading = isSyncing,
+                onClick = onAddClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddToCartButton(
+    isLoading: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = !isLoading,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = BrandPurple,
+            disabledContainerColor = BrandPurple.copy(alpha = 0.6f)
+        ),
+        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(vertical = 14.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+        } else {
             Icon(imageVector = Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Add to cart", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun QuantityStepperBar(
+    quantity: Int,
+    isSyncing: Boolean,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit
+) {
+    // یه نبض کوچیک هر بار که عدد عوض میشه -> حس زنده بودن سینک با سرور رو منتقل می‌کنه
+    val scale by animateFloatAsState(
+        targetValue = if (isSyncing) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "stepperScale"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFEDEAFB)),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onDecrease, enabled = !isSyncing, modifier = Modifier.size(52.dp)) {
+            Icon(imageVector = Icons.Outlined.Remove, contentDescription = "کم کردن", tint = BrandPurple)
+        }
+
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f)) {
+            if (isSyncing) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = BrandPurple, strokeWidth = 2.dp)
+            } else {
+                AnimatedContent(targetState = quantity, label = "quantityNumber") { q ->
+                    Text(text = q.toString(), color = BrandPurple, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        IconButton(onClick = onIncrease, enabled = !isSyncing, modifier = Modifier.size(52.dp)) {
+            Icon(imageVector = Icons.Outlined.Add, contentDescription = "زیاد کردن", tint = BrandPurple)
         }
     }
 }
