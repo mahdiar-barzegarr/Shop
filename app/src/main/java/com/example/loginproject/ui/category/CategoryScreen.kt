@@ -71,17 +71,7 @@ fun CategoriesScreen(
         containerColor = ScreenBg,
         bottomBar = {
             AppBottomBar(
-                selectedTab = selectedTab,
-                onTabSelected = { index ->
-                    selectedTab = index
-                    if (index == 0) {
-                        navController.navigate("home") {
-                            popUpTo("home") { inclusive = true }
-                        }
-                    } else if (index == 3) {
-                        navController.navigate("cart")
-                    }
-                }
+                navController
             )
         }
     ) { innerPadding ->

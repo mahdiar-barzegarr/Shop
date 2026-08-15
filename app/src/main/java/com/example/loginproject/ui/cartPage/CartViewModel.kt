@@ -29,6 +29,7 @@ data class CartUiState(
     val items: List<CartItemUi> = emptyList(),
     val subtotal: Double = 0.0,
     val total: Double = 0.0,
+    val isSyncing: Boolean = false,
     val error: String? = null
 )
 
@@ -39,6 +40,12 @@ class CartViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(CartUiState())
     val uiState: StateFlow<com.example.loginproject.ui.cartPage.CartUiState> = _uiState.asStateFlow()
+
+    // آخرین quantity‌ای که سرور تأیید کرده (baseline) — برای تشخیص اینکه واقعاً چی تغییر کرده
+    private val serverQuantities = mutableMapOf<Int, Int>()
+
+    // تغییرات quantity که هنوز به سرور فرستاده نشدن (cartItemId -> quantity نهایی)
+    private val pendingQuantityChanges = mutableMapOf<Int, Int>()
 
     init { loadCart() }
 
@@ -53,9 +60,7 @@ class CartViewModel @Inject constructor(
                     return@launch
                 }
 
-                // برای عکس و productId، با لیست کل محصولات match می‌کنیم روی نام
                 val allProducts = repository.getProducts().body()?.results.orEmpty()
-
                 val items = cart.items.map { item ->
                     val matched = allProducts.find { it.name == item.product }
                     CartItemUi(
@@ -68,6 +73,10 @@ class CartViewModel @Inject constructor(
                         imageUrl = matched?.image?.let { ApiConfig.SERVER_HOST + it }
                     )
                 }
+
+                serverQuantities.clear()
+                items.forEach { serverQuantities[it.cartItemId] = it.quantity }
+                pendingQuantityChanges.clear()
 
                 _uiState.update {
                     it.copy(
@@ -83,30 +92,125 @@ class CartViewModel @Inject constructor(
         }
     }
 
+    /**
+     * حذف همچنان فوریه — چون یه اکشن مجزاست، نه چیزی که سریع پشت‌سرهم تپ بشه.
+     */
     fun deleteItem(cartItemId: Int) {
+        _uiState.update { state ->
+            val updatedItems = state.items.filterNot { it.cartItemId == cartItemId }
+            state.copy(
+                items = updatedItems,
+                subtotal = updatedItems.calculateTotal(),
+                total = updatedItems.calculateTotal()
+            )
+        }
+        serverQuantities.remove(cartItemId)
+        pendingQuantityChanges.remove(cartItemId)
+
         viewModelScope.launch {
-            if (repository.deleteCartItem(cartItemId).isSuccessful) loadCart()
+            repository.deleteCartItem(cartItemId)
+            syncCartSilently()
         }
     }
 
-    fun increaseQuantity(item: CartItemUi) {
-        changeQuantity(item, item.quantity + 1)
-    }
+    /**
+     * فقط local state رو آپدیت می‌کنه و توی pendingQuantityChanges ثبت می‌کنه.
+     * هیچ network call ای اینجا نمی‌ره — فقط موقع Checkout همه با هم commit می‌شن.
+     */
+    fun increaseQuantity(item: CartItemUi) = updateQuantityLocal(item, item.quantity + 1)
 
     fun decreaseQuantity(item: CartItemUi) {
-        if (item.quantity <= 1) {
-            deleteItem(item.cartItemId)
+        if (item.quantity <= 1) deleteItem(item.cartItemId)
+        else updateQuantityLocal(item, item.quantity - 1)
+    }
+
+    private fun List<CartItemUi>.calculateTotal(): Double = sumOf { it.price * it.quantity }
+
+    private fun updateQuantityLocal(item: CartItemUi, newQuantity: Int) {
+        _uiState.update { state ->
+            val updatedItems = state.items.map {
+                if (it.cartItemId == item.cartItemId) it.copy(quantity = newQuantity) else it
+            }
+            state.copy(
+                items = updatedItems,
+                subtotal = updatedItems.calculateTotal(),
+                total = updatedItems.calculateTotal()
+            )
+        }
+
+        val baseline = serverQuantities[item.cartItemId]
+        if (baseline == newQuantity) {
+            pendingQuantityChanges.remove(item.cartItemId)
         } else {
-            changeQuantity(item, item.quantity - 1)
+            pendingQuantityChanges[item.cartItemId] = newQuantity
         }
     }
 
-    private fun changeQuantity(item: CartItemUi, newQuantity: Int) {
-        viewModelScope.launch {
-            val variantId = resolveVariantId(item) ?: return@launch
-            repository.deleteCartItem(item.cartItemId)
-            repository.addItemToCart(variantId, newQuantity)
-            loadCart()
+    /**
+     * موقع زدن Checkout صدا زده می‌شه. همه‌ی تغییرات pending رو یکی‌یکی
+     * (نه همزمان) به سرور می‌فرسته تا هیچ race ای پیش نیاد، بعد cart رو
+     * از سرور رفرش می‌کنه. خروجی true یعنی می‌تونی خیالت راحت باشه و
+     * بری صفحه Checkout.
+     */
+    suspend fun commitPendingChanges(): Boolean {
+        if (pendingQuantityChanges.isEmpty()) return true
+
+        _uiState.update { it.copy(isSyncing = true) }
+
+        val currentItems = _uiState.value.items
+        val changesSnapshot = pendingQuantityChanges.toMap()
+
+        try {
+            for ((cartItemId, newQuantity) in changesSnapshot) {
+                val item = currentItems.find { it.cartItemId == cartItemId } ?: continue
+                val variantId = resolveVariantId(item) ?: continue
+
+                repository.deleteCartItem(cartItemId)
+                repository.addItemToCart(variantId, newQuantity)
+            }
+
+            pendingQuantityChanges.clear()
+            syncCartSilently()
+            return true
+        } catch (e: Exception) {
+            _uiState.update { it.copy(error = e.localizedMessage) }
+            return false
+        } finally {
+            _uiState.update { it.copy(isSyncing = false) }
+        }
+    }
+
+    private suspend fun syncCartSilently() {
+        val cartResponse = repository.getUserCart()
+        val cart = cartResponse.body() ?: return
+        val allProducts = repository.getProducts().body()?.results.orEmpty()
+
+        val freshItems = cart.items.map { item ->
+            val matched = allProducts.find { it.name == item.product }
+            CartItemUi(
+                cartItemId = item.id,
+                productId = matched?.id,
+                colorName = item.color,
+                name = item.product,
+                price = item.price.toDouble() ?: 0.0,
+                quantity = item.quantity,
+                imageUrl = matched?.image?.let { ApiConfig.SERVER_HOST + it }
+            )
+        }
+
+        serverQuantities.clear()
+        freshItems.forEach { serverQuantities[it.cartItemId] = it.quantity }
+
+        _uiState.update { state ->
+            val oldOrderKeys = state.items.map { it.name to it.colorName }
+            val reordered = freshItems.sortedBy { fi ->
+                oldOrderKeys.indexOf(fi.name to fi.colorName).let { if (it == -1) Int.MAX_VALUE else it }
+            }
+            state.copy(
+                items = reordered,
+                subtotal = cart.total_price.toDouble() ?: 0.0,
+                total = cart.total_price.toDouble() ?: 0.0
+            )
         }
     }
 

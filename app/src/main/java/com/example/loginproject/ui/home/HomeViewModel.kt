@@ -17,8 +17,11 @@ import com.example.loginproject.data.remote.response.ProductDto
 import com.example.loginproject.repository.ApiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalTime
@@ -94,6 +97,15 @@ class HomeViewModel @Inject constructor(
     private val _isLoadingProducts = MutableStateFlow(false)
     val isLoadingProducts: StateFlow<Boolean> = _isLoadingProducts
 
+    private val _allProducts = MutableStateFlow<List<ProductItem>>(emptyList())
+
+    val searchResults: StateFlow<List<ProductItem>> =
+        combine(searchQuery, _allProducts) { query, products ->
+            if (query.isBlank()) emptyList()
+            else products.filter { it.name.contains(query, ignoreCase = true) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+
     init {
         _greeting.value = computeGreeting()
         loadProfile()
@@ -122,12 +134,11 @@ class HomeViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                // TODO: می‌تونی یه پیام خطا هم نگه داری
+
             }
         }
     }
 
-    // TODO: وقتی بک‌اند برای هر دسته یه آیکون مشخص کرد، این نگاشت رو دقیق‌تر کن
     private fun categoryIconForIndex(index: Int): ImageVector {
         val icons = listOf(
             Icons.Outlined.ShoppingBag,
@@ -178,11 +189,12 @@ class HomeViewModel @Inject constructor(
                         ?.filter { it.is_available }
                         ?: emptyList()
 
+                    _allProducts.value = allProducts.map { it.toProductItem() } // <-- این خط اضافه شد
+
                     _popularProducts.value = allProducts.take(4).map { it.toProductItem() }
                     _newArrivals.value = allProducts.takeLast(4).map { it.toNewArrivalItem() }
                 }
             } catch (e: Exception) {
-                // TODO: می‌تونی یه پیام خطا هم نگه داری و توی UI نشون بدی
             } finally {
                 _isLoadingProducts.value = false
             }

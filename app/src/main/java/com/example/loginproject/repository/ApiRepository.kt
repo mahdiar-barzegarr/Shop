@@ -1,11 +1,13 @@
 package com.example.loginproject.repository
 
+import com.example.loginproject.data.remote.ApiConfig
 import com.example.loginproject.data.remote.api.ApiService
 import com.example.loginproject.data.remote.request.AddCartItemRequest
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.data.remote.request.UserCartResponse
 import com.example.loginproject.data.remote.response.AddCartItemResponse
+import com.example.loginproject.data.remote.response.CartCheckoutResponse
 import com.example.loginproject.data.remote.response.CategoryDto
 import com.example.loginproject.data.remote.response.ProductDetailResponse
 import com.example.loginproject.data.remote.response.ProductDto
@@ -98,4 +100,9 @@ class ApiRepository @Inject constructor(
 
 
     suspend fun getCategories(): Response<List<CategoryDto>> = api.getCategories()
+
+
+    suspend fun cartCheckout(): CartCheckoutResponse {
+        return api.cartCheckout(url = ApiService.CART_CHECKOUT_URL)
+    }
 }

@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -30,97 +32,118 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.loginproject.data.remote.request.UserCartResponse
-import com.example.loginproject.data.remote.response.CartUiState
+import com.example.loginproject.ui.home.AppBottomBar
+import kotlinx.coroutines.launch
 
 @Composable
 fun CartScreen(
     navController: NavController,
     viewModel: CartViewModel = hiltViewModel(),
-    onClose: () -> Unit,
     onCheckout: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(20.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+    Scaffold(
+        bottomBar = { AppBottomBar(navController = navController) }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(innerPadding)
+                .padding(20.dp)
         ) {
-            Column {
-                Text("Almost there", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
-                Text("Your cart", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            }
-            IconButton(
-                onClick = onClose,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color(0xFFF3F1FA))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.Top
             ) {
-                Icon(Icons.Default.Close, contentDescription = "بستن")
-            }
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        if (state.isLoading) {
-            Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(state.items, key = { it.cartItemId }) { item ->
-                    CartItemCard(
-                        item = item,
-                        onIncrease = { viewModel.increaseQuantity(item) },
-                        onDecrease = { viewModel.decreaseQuantity(item) },
-                        onDelete = { viewModel.deleteItem(item.cartItemId) }
-                    )
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color(0xFFF3F1FA))
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
+                }
+                Spacer(Modifier.width(16.dp))
+                Column {
+                    Text("Almost there", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                    Text("Your cart", fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            CartSummaryCard(subtotal = state.subtotal, total = state.total)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
-            Button(
-                onClick = onCheckout,
-                modifier = Modifier
+            if (state.isLoading) {
+                Box(Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(26.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Checkout", fontWeight = FontWeight.Medium)
-                Spacer(Modifier.width(6.dp))
-                Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                    .padding(40.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(state.items, key = { it.cartItemId }) { item ->
+                        CartItemCard(
+                            item = item,
+                            onIncrease = { viewModel.increaseQuantity(item) },
+                            onDecrease = { viewModel.decreaseQuantity(item) },
+                            onDelete = { viewModel.deleteItem(item.cartItemId) }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                CartSummaryCard(subtotal = state.subtotal, total = state.total)
+                Spacer(Modifier.height(16.dp))
+
+                val scope = rememberCoroutineScope()
+
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val success = viewModel.commitPendingChanges()
+                            if (success) onCheckout()
+                        }
+                    },
+                    enabled = !state.isSyncing,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (state.isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Checkout", fontWeight = FontWeight.Medium)
+                        Spacer(Modifier.width(6.dp))
+                        Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                }
             }
         }
     }
@@ -162,7 +185,11 @@ private fun CartItemCard(
                 ) {
                     Text(item.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     IconButton(onClick = onDelete, modifier = Modifier.size(20.dp)) {
-                        Icon(Icons.Default.Delete, contentDescription = "حذف", modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "حذف",
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
                 Text(item.colorName, color = Color.Gray, fontSize = 13.sp)
@@ -206,7 +233,11 @@ private fun QuantityStepper(
         IconButton(onClick = onDecrease, modifier = Modifier.size(22.dp)) {
             Text("–", fontWeight = FontWeight.Bold)
         }
-        Text("$quantity", modifier = Modifier.padding(horizontal = 8.dp), fontWeight = FontWeight.Medium)
+        Text(
+            "$quantity",
+            modifier = Modifier.padding(horizontal = 8.dp),
+            fontWeight = FontWeight.Medium
+        )
         IconButton(onClick = onIncrease, modifier = Modifier.size(22.dp)) {
             Text("+", fontWeight = FontWeight.Bold)
         }
@@ -255,4 +286,7 @@ private fun SummaryRow(
     }
 }
 
-private fun formatPrice(price: Double): String = "$" + "%,.2f".format(price)
+private fun formatPrice(price: Double): String {
+    val formatted = "%,.0f".format(price)
+    return "$formatted تومان"
+}

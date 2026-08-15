@@ -6,6 +6,7 @@ import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.data.remote.request.UserCartResponse
 import com.example.loginproject.data.remote.response.AddCartItemResponse
+import com.example.loginproject.data.remote.response.CartCheckoutResponse
 import com.example.loginproject.data.remote.response.CategoryDto
 import com.example.loginproject.data.remote.response.ProductDetailResponse
 import com.example.loginproject.data.remote.response.ProductListResponse
@@ -30,6 +31,7 @@ interface ApiService {
         val ADD_ITEM_URL = "${ApiConfig.CART_BASE}add_item/"
         val CART_URL = "${ApiConfig.CART_BASE}user_cart/"
         val DELETE_ITEM_BASE = "${ApiConfig.CART_BASE}delete_item/"
+        val CART_CHECKOUT_URL = "${ApiConfig.CART_BASE}cart_checkout/"
     }
 
 
@@ -55,6 +57,9 @@ interface ApiService {
 
     @GET("user_profile/")
     suspend fun getProfile(): Response<ProfileResponse>
+
+    @GET
+    suspend fun cartCheckout(@Url url: String): CartCheckoutResponse
 
     @GET
     suspend fun getProductDetail(@Url url: String): Response<ProductDetailResponse>

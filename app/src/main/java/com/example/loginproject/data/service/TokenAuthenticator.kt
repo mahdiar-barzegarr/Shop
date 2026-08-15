@@ -4,6 +4,8 @@ import com.example.loginproject.data.local.TokenManager
 import com.example.loginproject.data.remote.api.ApiService
 import com.example.loginproject.models.RefreshRequest
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
@@ -26,34 +28,48 @@ class TokenAuthenticator @Inject constructor(
     private val apiServiceProvider: Provider<ApiService>
 ) : Authenticator {
 
+    companion object {
+        private val refreshMutex = Mutex()
+    }
+
     override fun authenticate(route: Route?, response: Response): Request? {
-        // جلوگیری از حلقه بی‌نهایت: اگه یه بار قبلاً تلاش کردیم و بازم 401 گرفتیم، دیگه ول کن
         if (responseCount(response) >= 2) return null
 
-        val refreshToken = tokenManager.getRefreshTokenBlocking() ?: return null
-
         return runBlocking {
-            try {
-                val refreshResponse = apiServiceProvider.get()
-                    .refreshToken(RefreshRequest(refreshToken))
+            refreshMutex.withLock {
+                val failedAccessToken = response.request.header("Authorization")
+                    ?.removePrefix("Bearer ")
 
-                if (refreshResponse.isSuccessful) {
-                    val newAccess = refreshResponse.body()?.access ?: return@runBlocking null
-                    tokenManager.updateAccessTokenBlocking(newAccess)
-
-                    refreshResponse.body()?.refresh?.let { newRefresh ->
-                        tokenManager.updateRefreshTokenBlocking(newRefresh)
-                    }
-
-                    response.request.newBuilder()
-                        .header("Authorization", "Bearer $newAccess")
+                val currentAccess = tokenManager.getAccessTokenBlocking()
+                if (currentAccess != null && currentAccess != failedAccessToken) {
+                    return@withLock response.request.newBuilder()
+                        .header("Authorization", "Bearer $currentAccess")
                         .build()
-                } else {
-                    tokenManager.clearSession()
+                }
+
+                val refreshToken = tokenManager.getRefreshTokenBlocking()
+                    ?: return@withLock null
+
+                try {
+                    val refreshResponse = apiServiceProvider.get()
+                        .refreshToken(RefreshRequest(refreshToken))
+
+                    if (refreshResponse.isSuccessful) {
+                        val newAccess = refreshResponse.body()?.access ?: return@withLock null
+                        tokenManager.updateAccessTokenBlocking(newAccess)
+                        refreshResponse.body()?.refresh?.let { newRefresh ->
+                            tokenManager.updateRefreshTokenBlocking(newRefresh)
+                        }
+                        response.request.newBuilder()
+                            .header("Authorization", "Bearer $newAccess")
+                            .build()
+                    } else {
+                        tokenManager.clearSession()
+                        null
+                    }
+                } catch (e: Exception) {
                     null
                 }
-            } catch (e: Exception) {
-                null
             }
         }
     }
