@@ -8,6 +8,8 @@ import com.example.loginproject.data.remote.request.UserCartResponse
 import com.example.loginproject.data.remote.response.AddCartItemResponse
 import com.example.loginproject.data.remote.response.CartCheckoutResponse
 import com.example.loginproject.data.remote.response.CategoryDto
+import com.example.loginproject.data.remote.response.FavoriteItemDto
+import com.example.loginproject.data.remote.response.FavoriteResponse
 import com.example.loginproject.data.remote.response.ProductDetailResponse
 import com.example.loginproject.data.remote.response.ProductListResponse
 import com.example.loginproject.data.remote.response.ProfileResponse
@@ -20,6 +22,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Url
 
 interface ApiService {
@@ -57,6 +60,19 @@ interface ApiService {
 
     @GET("user_profile/")
     suspend fun getProfile(): Response<ProfileResponse>
+
+    @GET("user_favorites/")
+    suspend fun getFavorites(): Response<List<FavoriteItemDto>>
+
+    @POST("add_favorite/{productId}/")
+    suspend fun addFavorite(
+        @Path("productId") productId: Int
+    ): Response<FavoriteResponse>
+
+    @DELETE("remove_favorite/{favoriteEntryId}/")
+    suspend fun removeFavorite(
+        @Path("favoriteEntryId") favoriteEntryId: Int
+    ): Response<Unit>
 
     @GET
     suspend fun cartCheckout(@Url url: String): CartCheckoutResponse

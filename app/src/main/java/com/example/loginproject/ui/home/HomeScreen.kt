@@ -506,7 +506,8 @@ private val bottomNavItems = listOf(
     BottomNavItem("home", Icons.Default.Home, "home"),
     BottomNavItem("category", Icons.Default.Category, "category"),
     BottomNavItem("cart", Icons.Default.ShoppingCart, "cart"),
-    BottomNavItem("profile", Icons.Default.Person, "profile")
+    BottomNavItem("profile", Icons.Default.Person, "profile"),
+    BottomNavItem("favorite", Icons.Default.Person, "Favorite")
 )
 
 @Composable

@@ -56,7 +56,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-
 private val BrandPurple = Color(0xFF5B4FE9)
 private val TextDark = Color(0xFF1A1A2E)
 private val TextGray = Color(0xFF8A8FA3)
@@ -72,6 +71,7 @@ fun ProductDetailScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    val isSyncingFavorite by viewModel.isSyncingFavorite.collectAsStateWithLifecycle()
     val isInCart by viewModel.isInCart.collectAsStateWithLifecycle()
     val quantity by viewModel.quantity.collectAsStateWithLifecycle()
     val isSyncingCart by viewModel.isSyncingCart.collectAsStateWithLifecycle()
@@ -82,6 +82,7 @@ fun ProductDetailScreen(
             if (product != null) {
                 ProductBottomBar(
                     isFavorite = isFavorite,
+                    isSyncingFavorite = isSyncingFavorite,
                     isInCart = isInCart,
                     quantity = quantity,
                     isSyncingCart = isSyncingCart,
@@ -125,6 +126,7 @@ fun ProductDetailScreen(
                 ProductContent(
                     product = product!!,
                     isFavorite = isFavorite,
+                    isSyncingFavorite = isSyncingFavorite,
                     onBackClick = { navController.popBackStack() },
                     onFavoriteClick = viewModel::toggleFavorite,
                     modifier = Modifier.padding(innerPadding)
@@ -138,6 +140,7 @@ fun ProductDetailScreen(
 private fun ProductContent(
     product: ProductDetailUi,
     isFavorite: Boolean,
+    isSyncingFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -148,6 +151,7 @@ private fun ProductContent(
                 imageUrls = product.imageUrls,
                 onBackClick = onBackClick,
                 isFavorite = isFavorite,
+                isSyncingFavorite = isSyncingFavorite,
                 onFavoriteClick = onFavoriteClick
             )
         }
@@ -206,6 +210,7 @@ private fun ProductImagePager(
     imageUrls: List<String>,
     onBackClick: () -> Unit,
     isFavorite: Boolean,
+    isSyncingFavorite: Boolean,
     onFavoriteClick: () -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { imageUrls.size.coerceAtLeast(1) })
@@ -254,6 +259,7 @@ private fun ProductImagePager(
 
         IconButton(
             onClick = onFavoriteClick,
+            enabled = !isSyncingFavorite,
             modifier = Modifier
                 .padding(16.dp)
                 .size(40.dp)
@@ -261,11 +267,15 @@ private fun ProductImagePager(
                 .background(Color.White)
                 .align(Alignment.TopEnd)
         ) {
-            Icon(
-                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = "علاقه‌مندی",
-                tint = if (isFavorite) Color(0xFFE0483F) else TextDark
-            )
+            if (isSyncingFavorite) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandPurple, strokeWidth = 2.dp)
+            } else {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = "علاقه‌مندی",
+                    tint = if (isFavorite) Color(0xFFE0483F) else TextDark
+                )
+            }
         }
 
         if (imageUrls.size > 1) {
@@ -291,6 +301,7 @@ private fun ProductImagePager(
 @Composable
 private fun ProductBottomBar(
     isFavorite: Boolean,
+    isSyncingFavorite: Boolean,
     isInCart: Boolean,
     quantity: Int,
     isSyncingCart: Boolean,
@@ -309,16 +320,21 @@ private fun ProductBottomBar(
     ) {
         OutlinedButton(
             onClick = onFavoriteClick,
+            enabled = !isSyncingFavorite,
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDark),
             modifier = Modifier.size(52.dp),
             contentPadding = PaddingValues(0.dp)
         ) {
-            Icon(
-                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = "علاقه‌مندی",
-                tint = if (isFavorite) Color(0xFFE0483F) else TextDark
-            )
+            if (isSyncingFavorite) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandPurple, strokeWidth = 2.dp)
+            } else {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = "علاقه‌مندی",
+                    tint = if (isFavorite) Color(0xFFE0483F) else TextDark
+                )
+            }
         }
 
         AddToCartArea(
@@ -333,11 +349,6 @@ private fun ProductBottomBar(
     }
 }
 
-/**
- * دقیقاً همون فضایی که دکمه "Add to cart" اشغال می‌کرد، الان دو حالت داره:
- * - isInCart == false  -> دکمه "Add to cart"
- * - isInCart == true   -> استپر تعداد (- / عدد / +) دقیقاً همون‌جا، با انیمیشن جابه‌جایی عمودی
- */
 @Composable
 private fun AddToCartArea(
     isInCart: Boolean,
@@ -406,7 +417,6 @@ private fun QuantityStepperBar(
     onIncrease: () -> Unit,
     onDecrease: () -> Unit
 ) {
-    // یه نبض کوچیک هر بار که عدد عوض میشه -> حس زنده بودن سینک با سرور رو منتقل می‌کنه
     val scale by animateFloatAsState(
         targetValue = if (isSyncing) 0.97f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),

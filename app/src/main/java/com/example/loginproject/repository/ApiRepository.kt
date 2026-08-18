@@ -9,6 +9,8 @@ import com.example.loginproject.data.remote.request.UserCartResponse
 import com.example.loginproject.data.remote.response.AddCartItemResponse
 import com.example.loginproject.data.remote.response.CartCheckoutResponse
 import com.example.loginproject.data.remote.response.CategoryDto
+import com.example.loginproject.data.remote.response.FavoriteItemDto
+import com.example.loginproject.data.remote.response.FavoriteResponse
 import com.example.loginproject.data.remote.response.ProductDetailResponse
 import com.example.loginproject.data.remote.response.ProductDto
 import com.example.loginproject.data.remote.response.ProductListResponse
@@ -80,6 +82,18 @@ class ApiRepository @Inject constructor(
                 quantity = quantity
             )
         )
+    }
+
+    suspend fun getFavorites(): Response<List<FavoriteItemDto>> {
+        return api.getFavorites()
+    }
+
+    suspend fun addFavorite(productId: Int): Response<FavoriteResponse> {
+        return api.addFavorite(productId)
+    }
+
+    suspend fun removeFavorite(favoriteEntryId: Int): Response<Unit> {
+        return api.removeFavorite(favoriteEntryId)
     }
 
 

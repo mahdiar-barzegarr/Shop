@@ -37,7 +37,6 @@ class ProductDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // فرض بر اینه که توی NavGraph آرگومان مسیر اسمش "productId" هست
     private val productId: Int = checkNotNull(savedStateHandle["productId"])
 
     private val _product = MutableStateFlow<ProductDetailUi?>(null)
@@ -49,36 +48,109 @@ class ProductDetailViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    // آیا این محصول همین الان توی سبد خریده؟ (چه از قبل، چه همین الان اد شده)
     private val _isInCart = MutableStateFlow(false)
     val isInCart: StateFlow<Boolean> = _isInCart
 
-    // تعداد فعلیش توی سبد (فقط وقتی isInCart==true معنا داره)
     private val _quantity = MutableStateFlow(1)
     val quantity: StateFlow<Int> = _quantity
 
-    // id ردیف این آیتم توی سبد خرید (برای delete لازمه). چون user_cart فقط
-    // اسم محصول رو میده نه id، این با مچ کردن اسم پیدا میشه.
     private var cartItemId: Int? = null
 
-    // موقع add/increase/decrease که داره با سرور سینک میشه، دکمه‌ها قفلن
     private val _isSyncingCart = MutableStateFlow(false)
     val isSyncingCart: StateFlow<Boolean> = _isSyncingCart
 
     private val _cartErrorMessage = MutableStateFlow<String?>(null)
     val cartErrorMessage: StateFlow<String?> = _cartErrorMessage
 
+    // وضعیت لایک
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite
+
+    // آیدی ردیف علاقه‌مندی (لازم برای remove_favorite). چون user_favorites
+    // فقط با چک کردن product.id توی لیست پیدا میشه، نه از یه فیلد مستقیم روی محصول.
+    private var favoriteEntryId: Int? = null
+
+    private val _isSyncingFavorite = MutableStateFlow(false)
+    val isSyncingFavorite: StateFlow<Boolean> = _isSyncingFavorite
+
+    private val _favoriteErrorMessage = MutableStateFlow<String?>(null)
+    val favoriteErrorMessage: StateFlow<String?> = _favoriteErrorMessage
 
     init {
         loadProduct()
     }
 
     fun toggleFavorite() {
-        // TODO: فعلاً فقط ظاهریه (محلیه). وقتی API لایک/علاقه‌مندی رو گرفتی،
-        // همینجا repository.addToFavorites(productId) رو صدا بزن.
-        _isFavorite.value = !_isFavorite.value
+        if (_isSyncingFavorite.value) return
+
+        if (_isFavorite.value) {
+            unfavorite()
+        } else {
+            favorite()
+        }
+    }
+
+    private fun favorite() {
+        viewModelScope.launch {
+            _isSyncingFavorite.value = true
+            _favoriteErrorMessage.value = null
+            try {
+                val response = repository.addFavorite(productId)
+                if (response.isSuccessful) {
+                    // برای گرفتن آیدی واقعی ردیف علاقه‌مندی (لازم برای حذف بعدی)
+                    refreshFavoriteStatus()
+                } else {
+                    _favoriteErrorMessage.value = "اضافه کردن به علاقه‌مندی‌ها ناموفق بود"
+                }
+            } catch (e: Exception) {
+                _favoriteErrorMessage.value = "اتصال برقرار نشد. اینترنت یا آدرس سرور رو چک کن"
+            } finally {
+                _isSyncingFavorite.value = false
+            }
+        }
+    }
+
+    private fun unfavorite() {
+        val currentFavoriteEntryId = favoriteEntryId ?: return
+
+        viewModelScope.launch {
+            _isSyncingFavorite.value = true
+            _favoriteErrorMessage.value = null
+            try {
+                val response = repository.removeFavorite(currentFavoriteEntryId)
+                if (response.isSuccessful) {
+                    _isFavorite.value = false
+                    favoriteEntryId = null
+                } else {
+                    _favoriteErrorMessage.value = "حذف از علاقه‌مندی‌ها ناموفق بود"
+                }
+            } catch (e: Exception) {
+                _favoriteErrorMessage.value = "اتصال برقرار نشد. اینترنت یا آدرس سرور رو چک کن"
+            } finally {
+                _isSyncingFavorite.value = false
+            }
+        }
+    }
+
+    /** لیست علاقه‌مندی‌ها رو از سرور می‌گیره و می‌بینه این محصول (بر اساس product.id) توش هست یا نه */
+    private fun refreshFavoriteStatus() {
+        viewModelScope.launch {
+            try {
+                val response = repository.getFavorites()
+                if (response.isSuccessful) {
+                    val matchedItem = response.body()?.firstOrNull { it.product.id == productId }
+                    if (matchedItem != null) {
+                        _isFavorite.value = true
+                        favoriteEntryId = matchedItem.id
+                    } else {
+                        _isFavorite.value = false
+                        favoriteEntryId = null
+                    }
+                }
+            } catch (e: Exception) {
+                // بی‌سروصدا نادیده بگیر
+            }
+        }
     }
 
     fun retry() = loadProduct()
@@ -90,11 +162,9 @@ class ProductDetailViewModel @Inject constructor(
             _isSyncingCart.value = true
             _cartErrorMessage.value = null
             try {
-                // TODO: وقتی UI انتخاب رنگ اضافه شد، به‌جای productId باید id همون
-                // رنگ انتخاب‌شده (ColorDto.id) به‌عنوان variant_id فرستاده بشه
                 val response = repository.addItemToCart(variantId = productId, quantity = 1)
                 if (response.isSuccessful) {
-                    refreshCartStatus() // برای گرفتن id واقعی ردیف سبد از سرور
+                    refreshCartStatus()
                 } else {
                     _cartErrorMessage.value = "اضافه کردن به سبد خرید ناموفق بود"
                 }
@@ -113,7 +183,6 @@ class ProductDetailViewModel @Inject constructor(
             _isSyncingCart.value = true
             _cartErrorMessage.value = null
             try {
-                // add_item جمع‌شونده‌ست، پس یه واحد دیگه اضافه کردن دقیقاً همینه
                 val response = repository.addItemToCart(variantId = productId, quantity = 1)
                 if (response.isSuccessful) {
                     refreshCartStatus()
@@ -144,12 +213,10 @@ class ProductDetailViewModel @Inject constructor(
                 }
 
                 if (newQuantity <= 0) {
-                    // کاملاً از سبد حذف شد
                     _isInCart.value = false
                     _quantity.value = 1
                     cartItemId = null
                 } else {
-                    // دوباره با تعداد جدید اضافه کن (چون API فقط add/delete داره، نه decrease مستقیم)
                     val addResponse = repository.addItemToCart(variantId = productId, quantity = newQuantity)
                     if (addResponse.isSuccessful) {
                         refreshCartStatus()
@@ -165,7 +232,6 @@ class ProductDetailViewModel @Inject constructor(
         }
     }
 
-    /** سبد خرید رو از سرور می‌گیره و می‌بینه این محصول (بر اساس اسم) توش هست یا نه */
     private fun refreshCartStatus() {
         viewModelScope.launch {
             try {
@@ -187,7 +253,7 @@ class ProductDetailViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                // بی‌سروصدا نادیده بگیر؛ وضعیت فعلی (محلی) رو نگه دار
+                // بی‌سروصدا نادیده بگیر
             }
         }
     }
@@ -202,8 +268,8 @@ class ProductDetailViewModel @Inject constructor(
                     response.body()?.let { dto ->
                         _product.value = dto.toUi()
                     }
-                    // بعد از لود شدن محصول، چک کن از قبل توی سبد هست یا نه
                     refreshCartStatus()
+                    refreshFavoriteStatus()
                 } else {
                     _errorMessage.value = "دریافت اطلاعات محصول ناموفق بود"
                 }

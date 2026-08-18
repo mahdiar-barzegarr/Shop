@@ -15,6 +15,7 @@ import com.example.loginproject.ui.cartPage.CartScreen
 import com.example.loginproject.ui.category.CategoriesScreen
 import com.example.loginproject.ui.categoryProducts.CategoryProductsScreen
 import com.example.loginproject.ui.checkout.CheckoutScreen
+import com.example.loginproject.ui.favorites.FavoritesScreen
 
 import com.example.loginproject.ui.home.HomeScreen
 import com.example.loginproject.ui.login.LoginScreen
@@ -54,6 +55,9 @@ fun NavigationGraph(
         composable("cart") { CartScreen(navController = navController, onCheckout = {navController.navigate("checkout")}) }
         composable("checkout") {
             CheckoutScreen(navController = navController)
+        }
+        composable("favorite") {
+            FavoritesScreen(navController = navController)
         }
     }
 }
