@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -48,7 +50,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,7 +60,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-private val BrandPurple = Color(0xFF5B4FE9)
+
+val BrandPurple = Color(0xFF5B4FE9)
 private val TextDark = Color(0xFF1A1A2E)
 private val TextGray = Color(0xFF8A8FA3)
 private val ScreenBg = Color(0xFFFFFFFF)
@@ -147,19 +152,37 @@ private fun ProductContent(
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item {
-            ProductImagePager(
-                imageUrls = product.imageUrls,
-                onBackClick = onBackClick,
-                isFavorite = isFavorite,
-                isSyncingFavorite = isSyncingFavorite,
-                onFavoriteClick = onFavoriteClick
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TopRoundButton(
+                    icon = Icons.Filled.ArrowBack,
+                    contentDescription = "بازگشت",
+                    onClick = onBackClick
+                )
+
+                TopRoundButton(
+                    icon = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = "علاقه‌مندی",
+                    tint = if (isFavorite) Color(0xFFE0483F) else TextDark,
+                    isLoading = isSyncingFavorite,
+                    onClick = onFavoriteClick
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            ProductImageCard(imageUrls = product.imageUrls, modifier = Modifier.padding(horizontal = 20.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
         }
 
         item {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -168,36 +191,34 @@ private fun ProductContent(
                     Text(
                         text = product.name,
                         color = TextDark,
-                        fontSize = 20.sp,
+                        fontSize = 21.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
+                    Text(text = product.price, color = BrandPurple, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(if (product.isAvailable) Color(0xFFE3F6EA) else Color(0xFFFBE7E5))
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
+                ) {
                     Text(
-                        text = product.price,
-                        color = BrandPurple,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        text = if (product.isAvailable) "Ready to ship" else "Out of stock",
+                        color = if (product.isAvailable) Color(0xFF2E9E5B) else Color(0xFFD1483F),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = if (product.isAvailable) "Ready to ship" else "Out of stock",
-                    color = TextGray,
-                    fontSize = 12.sp
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
                 Text(text = "About this piece", color = TextDark, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = product.description,
-                    color = TextGray,
-                    fontSize = 13.sp,
-                    lineHeight = 20.sp
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = product.description, color = TextGray, fontSize = 13.sp, lineHeight = 21.sp)
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -206,24 +227,44 @@ private fun ProductContent(
 }
 
 @Composable
-private fun ProductImagePager(
-    imageUrls: List<String>,
-    onBackClick: () -> Unit,
-    isFavorite: Boolean,
-    isSyncingFavorite: Boolean,
-    onFavoriteClick: () -> Unit
+private fun TopRoundButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    tint: Color = TextDark,
+    isLoading: Boolean = false
 ) {
+    Box(
+        modifier = Modifier
+            .shadow(elevation = 4.dp, shape = CircleShape, spotColor = Color(0x1A000000))
+            .size(42.dp)
+            .clip(CircleShape)
+            .background(Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        IconButton(onClick = onClick, enabled = !isLoading, modifier = Modifier.fillMaxSize()) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandPurple, strokeWidth = 2.dp)
+            } else {
+                Icon(imageVector = icon, contentDescription = contentDescription, tint = tint)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductImageCard(imageUrls: List<String>, modifier: Modifier = Modifier) {
     val pagerState = rememberPagerState(pageCount = { imageUrls.size.coerceAtLeast(1) })
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp), spotColor = Color(0x22000000))
+            .clip(RoundedCornerShape(24.dp))
+            .background(CardBg)
+    ) {
         if (imageUrls.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .background(CardBg),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Outlined.ShoppingBag,
                     contentDescription = null,
@@ -236,53 +277,15 @@ private fun ProductImagePager(
                 AsyncImage(
                     model = imageUrls[page],
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .background(CardBg),
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            }
-        }
-
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .padding(16.dp)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.White)
-                .align(Alignment.TopStart)
-        ) {
-            Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "بازگشت", tint = TextDark)
-        }
-
-        IconButton(
-            onClick = onFavoriteClick,
-            enabled = !isSyncingFavorite,
-            modifier = Modifier
-                .padding(16.dp)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.White)
-                .align(Alignment.TopEnd)
-        ) {
-            if (isSyncingFavorite) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandPurple, strokeWidth = 2.dp)
-            } else {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = "علاقه‌مندی",
-                    tint = if (isFavorite) Color(0xFFE0483F) else TextDark
                 )
             }
         }
 
         if (imageUrls.size > 1) {
             Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 12.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 repeat(imageUrls.size) { index ->
@@ -313,6 +316,7 @@ private fun ProductBottomBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(elevation = 12.dp, spotColor = Color(0x22000000))
             .background(Color.White)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -362,8 +366,8 @@ private fun AddToCartArea(
     AnimatedContent(
         targetState = isInCart,
         transitionSpec = {
-            (slideInVertically { height -> height } + androidx.compose.animation.fadeIn())
-                .togetherWith(slideOutVertically { height -> -height } + androidx.compose.animation.fadeOut())
+            (slideInVertically { height -> height } + fadeIn())
+                .togetherWith(slideOutVertically { height -> -height } + fadeOut())
         },
         label = "addToCartArea",
         modifier = modifier
@@ -376,19 +380,13 @@ private fun AddToCartArea(
                 onDecrease = onDecrease
             )
         } else {
-            AddToCartButton(
-                isLoading = isSyncing,
-                onClick = onAddClick
-            )
+            AddToCartButton(isLoading = isSyncing, onClick = onAddClick)
         }
     }
 }
 
 @Composable
-private fun AddToCartButton(
-    isLoading: Boolean,
-    onClick: () -> Unit
-) {
+private fun AddToCartButton(isLoading: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         enabled = !isLoading,

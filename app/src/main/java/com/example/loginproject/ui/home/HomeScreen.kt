@@ -45,6 +45,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -266,9 +268,10 @@ fun HomeScreen(
                             .horizontalScroll(scrollState),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        categories.forEach { category ->
+                        categories.forEachIndexed { index, category ->
                             CategoryChip(
                                 category = category,
+                                index = index,
                                 onClick = {
                                     val encodedName = java.net.URLEncoder.encode(category.label, "UTF-8")
                                     navController.navigate("category_products/${category.id}/$encodedName")
@@ -282,12 +285,9 @@ fun HomeScreen(
                 item {
                     SectionHeader(title = "Popular now", onSeeAllClick = { /* TODO */ })
                     Spacer(modifier = Modifier.height(12.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         items(popularProducts, key = { it.id }) { product ->
-                            ProductCard(
-                                product = product,
-                                onClick = { navController.navigate("product_detail/${product.id}") }
-                            )
+                            ProductCard(product = product, onClick = { navController.navigate("product_detail/${product.id}") })
                         }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
@@ -363,25 +363,31 @@ private fun PromoBannerCard(banner: PromoBanner, onExploreClick: () -> Unit) {
     }
 }
 
+private val CategoryPalette = listOf(
+    Color(0xFFE8E5FC), Color(0xFFFDE6D8), Color(0xFFDFF3E3),
+    Color(0xFFFCE7EF), Color(0xFFE1F0FB), Color(0xFFFFF3D6)
+)
+private val CategoryIconPalette = listOf(
+    Color(0xFF5B4FE9), Color(0xFFE07B39), Color(0xFF2E9E5B),
+    Color(0xFFD1477E), Color(0xFF2E86C1), Color(0xFFC98A1B)
+)
+
 @Composable
-private fun CategoryChip(category: CategoryItem, onClick: () -> Unit) {
+private fun CategoryChip(category: CategoryItem, index: Int, onClick: () -> Unit) {
+    val bg = CategoryPalette[index % CategoryPalette.size]
+    val iconTint = CategoryIconPalette[index % CategoryIconPalette.size]
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable { onClick() }
     ) {
         Box(
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(CardBg),
+                .size(58.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(bg),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = category.icon,
-                contentDescription = category.label,
-                tint = BrandPurple,
-                modifier = Modifier.size(24.dp)
-            )
+            Icon(imageVector = category.icon, contentDescription = category.label, tint = iconTint, modifier = Modifier.size(24.dp))
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(text = category.label, color = TextDark, fontSize = 12.sp)
@@ -392,14 +398,15 @@ private fun CategoryChip(category: CategoryItem, onClick: () -> Unit) {
 private fun ProductCard(product: ProductItem, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .width(150.dp)
+            .width(168.dp)
             .clickable { onClick() }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .height(160.dp)
+                .shadow(elevation = 6.dp, shape = RoundedCornerShape(20.dp), spotColor = BrandPurple.copy(alpha = 0.15f))
+                .clip(RoundedCornerShape(20.dp))
                 .background(CardBg),
             contentAlignment = Alignment.Center
         ) {
@@ -415,24 +422,14 @@ private fun ProductCard(product: ProductItem, onClick: () -> Unit) {
                     imageVector = Icons.Outlined.ShoppingBag,
                     contentDescription = product.name,
                     tint = TextGray,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(40.dp)
                 )
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = product.name,
-            color = TextDark,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = product.price,
-            color = BrandPurple,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(text = product.name, color = TextDark, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(text = product.price, color = BrandPurple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -503,11 +500,12 @@ private fun NewArrivalRow(item: NewArrivalItem, onClick: () -> Unit) {
 data class BottomNavItem(val route: String, val icon: ImageVector, val label: String)
 
 private val bottomNavItems = listOf(
-    BottomNavItem("home", Icons.Default.Home, "home"),
-    BottomNavItem("category", Icons.Default.Category, "category"),
+
     BottomNavItem("cart", Icons.Default.ShoppingCart, "cart"),
+    BottomNavItem("category", Icons.Default.Category, "category"),
+    BottomNavItem("home", Icons.Default.Home, "home"),
+    BottomNavItem("favorite", Icons.Default.Favorite, "Favorite"),
     BottomNavItem("profile", Icons.Default.Person, "profile"),
-    BottomNavItem("favorite", Icons.Default.Person, "Favorite")
 )
 
 @Composable

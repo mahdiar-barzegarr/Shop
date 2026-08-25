@@ -20,12 +20,23 @@ data class CheckoutItemUi(
     val imageUrl: String? = null
 )
 
+data class AddressUi(
+    val id: Int,
+    val title: String,
+    val province: String,
+    val city: String,
+    val address: String
+)
+
+
 data class CheckoutUiState(
     val isLoading: Boolean = true,
     val items: List<CheckoutItemUi> = emptyList(),
     val itemsPrice: Double = 0.0,
     val shippingPrice: Double = 0.0,
     val totalPrice: Double = 0.0,
+    val addresses: List<AddressUi> = emptyList(),
+    val selectedAddressId: Int? = null,
     val error: String? = null
 )
 
@@ -37,16 +48,13 @@ class CheckoutViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CheckoutUiState())
     val uiState: StateFlow<CheckoutUiState> = _uiState.asStateFlow()
 
-    init {
-        loadCheckout()
-    }
+    init { loadCheckout() }
 
     private fun loadCheckout() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val checkoutResponse = repository.cartCheckout()
-
                 val productsResponse = repository.getProducts()
                 val allProducts = productsResponse.body()?.results ?: emptyList()
 
@@ -62,12 +70,19 @@ class CheckoutViewModel @Inject constructor(
                     )
                 }
 
+                val addressesResponse = repository.getUserAddresses()
+                val addresses = addressesResponse.body()?.map {
+                    AddressUi(it.id, it.title, it.province, it.city, it.address)
+                } ?: emptyList()
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     items = items,
                     itemsPrice = checkoutResponse.items_price,
                     shippingPrice = checkoutResponse.shipping_price,
-                    totalPrice = checkoutResponse.total_price
+                    totalPrice = checkoutResponse.total_price,
+                    addresses = addresses,
+                    selectedAddressId = addresses.firstOrNull()?.id
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -76,5 +91,9 @@ class CheckoutViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun selectAddress(id: Int) {
+        _uiState.value = _uiState.value.copy(selectedAddressId = id)
     }
 }

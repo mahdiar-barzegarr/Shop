@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -271,9 +272,6 @@ fun CategoryProductsScreen(
                         items(products, key = { it.id }) { product ->
                             ProductGridCard(
                                 product = product,
-                                isFavorite = product.id in favoriteIds,
-                                onFavoriteClick = { viewModel.toggleFavorite(product.id) },
-                                onAddClick = { viewModel.onAddToCartClick(product.id) },
                                 onCardClick = { navController.navigate("product_detail/${product.id}") }
                             )
                         }
@@ -309,78 +307,45 @@ private fun RoundIconButton(
 @Composable
 private fun ProductGridCard(
     product: CategoryProductUi,
-    isFavorite: Boolean,
-    onFavoriteClick: () -> Unit,
-    onAddClick: () -> Unit,
     onCardClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(18.dp), spotColor = Color(0x1A000000))
             .clip(RoundedCornerShape(18.dp))
-            .background(CardBg)
+            .background(Color.White)
             .clickable { onCardClick() }
             .padding(bottom = 10.dp)
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                if (product.imageUrl != null) {
-                    AsyncImage(
-                        model = product.imageUrl,
-                        contentDescription = product.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Outlined.ShoppingBag,
-                        contentDescription = product.name,
-                        tint = TextGray,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-            }
-
-            IconButton(
-                onClick = onFavoriteClick,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .align(Alignment.TopEnd)
-            ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                .background(CardBg),
+            contentAlignment = Alignment.Center
+        ) {
+            if (product.imageUrl != null) {
+                AsyncImage(
+                    model = product.imageUrl,
+                    contentDescription = product.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
                 Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = "علاقه‌مندی",
-                    tint = if (isFavorite) Color(0xFFE0483F) else TextDark,
-                    modifier = Modifier.size(16.dp)
+                    imageVector = Icons.Outlined.ShoppingBag,
+                    contentDescription = product.name,
+                    tint = TextGray,
+                    modifier = Modifier.size(40.dp)
                 )
             }
         }
 
-        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-            Text(
-                text = product.name,
-                color = TextDark,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = product.price,
-                color = BrandPurple,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            AddButton(onClick = onAddClick)
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Text(text = product.name, color = TextDark, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(text = product.price, color = BrandPurple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

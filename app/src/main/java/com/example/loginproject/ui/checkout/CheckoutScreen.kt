@@ -1,6 +1,7 @@
 package com.example.loginproject.ui.checkout
 
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,12 +19,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -44,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,162 +62,210 @@ fun CheckoutScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column {
-                Text("Almost there", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
-                Text("Checkout", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            }
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color(0xFFF3F1FA))
+    Scaffold() { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(
+                    start = 20.dp,
+                    end = 20.dp,
+                    top = innerPadding.calculateTopPadding() + 16.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 20.dp
+                )
+        )
+        {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
-            }
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        if (state.isLoading) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    Text("Shipping address", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Spacer(Modifier.height(12.dp))
-                    ShippingAddressCard(onAddClick = { /* بعداً: navigate to add-address screen */ })
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color(0xFFF3F1FA))
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
                 }
-
-                item {
-                    Text("Order items", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-
-                items(state.items, key = { it.id }) { item ->
-                    CheckoutItemCard(item = item)
-                }
-
-                item {
-                    CheckoutSummaryCard(
-                        itemsPrice = state.itemsPrice,
-                        shippingPrice = state.shippingPrice,
-                        totalPrice = state.totalPrice
+                Column {
+                    Text(
+                        "Almost there",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp
                     )
+                    Text("Checkout", fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 }
+            }
 
-                item {
-                    Text("Payment method", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Spacer(Modifier.height(12.dp))
-                    PaymentMethodCard()
-                    Spacer(Modifier.height(12.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            "Your payment is 100% secure and encrypted.",
-                            color = Color.Gray,
-                            fontSize = 13.sp
+            Spacer(Modifier.height(20.dp))
+
+            if (state.isLoading) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        Text("Shipping address", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            state.addresses.forEach { addr ->
+                                AddressCard(
+                                    address = addr,
+                                    isSelected = addr.id == state.selectedAddressId,
+                                    onClick = { viewModel.selectAddress(addr.id) }
+                                )
+                            }
+                            AddNewAddressCard(onClick = { navController.navigate("add_address") })
+                        }
+                    }
+
+                    item {
+                        Text("Order items", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+
+                    items(state.items, key = { it.id }) { item ->
+                        CheckoutItemCard(item = item)
+                    }
+
+                    item {
+                        CheckoutSummaryCard(
+                            itemsPrice = state.itemsPrice,
+                            shippingPrice = state.shippingPrice,
+                            totalPrice = state.totalPrice
                         )
                     }
+
+                    item {
+                        Text("Payment method", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Spacer(Modifier.height(12.dp))
+                        PaymentMethodCard()
+                        Spacer(Modifier.height(12.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Your payment is 100% secure and encrypted.",
+                                color = Color.Gray,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
                 }
-            }
 
-            Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-            Button(
-                onClick = onGoToPaymentGateway,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(26.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Go to Payment Gateway", fontWeight = FontWeight.Medium)
-                Spacer(Modifier.width(6.dp))
-                Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+                Button(
+                    onClick = onGoToPaymentGateway,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Go to Payment Gateway", fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
+
+
 }
 
 @Composable
-private fun ShippingAddressCard(onAddClick: () -> Unit) {
+private fun AddressCard(address: AddressUi, isSelected: Boolean, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color(0xFFF3F1FA) else Color.White
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 1.5.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFEFEFEF)
+        ),
+        elevation = CardDefaults.cardElevation(if (isSelected) 0.dp else 1.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF3F1FA)),
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFF3F1FA)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.LocationOn,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = if (isSelected) Color.White else MaterialTheme.colorScheme.primary
                 )
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("No address added", fontWeight = FontWeight.SemiBold)
-                Text("Add an address to get your order", color = Color.Gray, fontSize = 13.sp)
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clip(RoundedCornerShape(8.dp))
-            ) {
+                Text(address.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Spacer(Modifier.height(2.dp))
                 Text(
-                    "Add",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(4.dp)
-                )
-                Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
+                    "${address.province}, ${address.city} — ${address.address}",
+                    color = Color.Gray,
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+            RadioButton(selected = isSelected, onClick = onClick)
+        }
+    }
+}
+
+@Composable
+private fun AddNewAddressCard(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFEFEFEF)),
+        elevation = CardDefaults.cardElevation(0.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF3F1FA)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.width(12.dp))
+            Text("Add new address", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
         }
     }
 }

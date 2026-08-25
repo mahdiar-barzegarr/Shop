@@ -2,11 +2,14 @@ package com.example.loginproject.repository
 
 import com.example.loginproject.data.remote.ApiConfig
 import com.example.loginproject.data.remote.api.ApiService
+import com.example.loginproject.data.remote.request.AddAddressRequest
 import com.example.loginproject.data.remote.request.AddCartItemRequest
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.data.remote.request.UserCartResponse
+import com.example.loginproject.data.remote.response.AddAddressResponse
 import com.example.loginproject.data.remote.response.AddCartItemResponse
+import com.example.loginproject.data.remote.response.AddressDto
 import com.example.loginproject.data.remote.response.CartCheckoutResponse
 import com.example.loginproject.data.remote.response.CategoryDto
 import com.example.loginproject.data.remote.response.FavoriteItemDto
@@ -107,6 +110,11 @@ class ApiRepository @Inject constructor(
 
 
     suspend fun getProfile(): Response<ProfileResponse> = api.getProfile()
+
+    suspend fun addAddress(request: AddAddressRequest): Response<AddAddressResponse> = api.addAddress(request)
+
+
+    suspend fun getUserAddresses(): Response<List<AddressDto>> = api.getUserAddresses()
 
 
     suspend fun refreshToken(refresh: String): Response<RefreshResponseModel> =
