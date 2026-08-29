@@ -1,5 +1,4 @@
 package com.example.loginproject.ui.cartPage
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,10 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.loginproject.ui.home.AppBottomBar
@@ -58,6 +57,13 @@ fun CartScreen(
     onCheckout: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // هر بار که کاربر دوباره به این صفحه برمی‌گرده (از صفحه محصول، bottom nav، هرجا)
+    // سبد از سرور تازه می‌شه — قبلاً چون فقط init یک‌بار اجرا می‌شد، آیتم‌های
+    // تازه‌اضافه‌شده از جای دیگه دیده نمی‌شدن.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.loadCart()
+    }
 
     Scaffold(
         bottomBar = { AppBottomBar(navController = navController) }
@@ -106,8 +112,7 @@ fun CartScreen(
                         CartItemCard(
                             item = item,
                             onIncrease = { viewModel.increaseQuantity(item) },
-                            onDecrease = { viewModel.decreaseQuantity(item) },
-                            onDelete = { viewModel.deleteItem(item.cartItemId) }
+                            onDecrease = { viewModel.decreaseQuantity(item) }
                         )
                     }
                 }
@@ -121,7 +126,7 @@ fun CartScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            val success = viewModel.commitPendingChanges()
+                            val success = viewModel.flushPendingChanges()
                             if (success) onCheckout()
                         }
                     },
@@ -153,8 +158,7 @@ fun CartScreen(
 private fun CartItemCard(
     item: CartItemUi,
     onIncrease: () -> Unit,
-    onDecrease: () -> Unit,
-    onDelete: () -> Unit
+    onDecrease: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -179,19 +183,7 @@ private fun CartItemCard(
             Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(item.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                    IconButton(onClick = onDelete, modifier = Modifier.size(20.dp)) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "حذف",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
+                Text(item.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Text(item.colorName, color = Color.Gray, fontSize = 13.sp)
 
                 Spacer(Modifier.height(6.dp))
@@ -208,6 +200,7 @@ private fun CartItemCard(
                     )
                     QuantityStepper(
                         quantity = item.quantity,
+                        isSyncing = item.isSyncing,
                         onIncrease = onIncrease,
                         onDecrease = onDecrease
                     )
@@ -220,6 +213,7 @@ private fun CartItemCard(
 @Composable
 private fun QuantityStepper(
     quantity: Int,
+    isSyncing: Boolean,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit
 ) {
@@ -230,16 +224,34 @@ private fun QuantityStepper(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onDecrease, modifier = Modifier.size(22.dp)) {
-            Text("–", fontWeight = FontWeight.Bold)
-        }
-        Text(
-            "$quantity",
-            modifier = Modifier.padding(horizontal = 8.dp),
-            fontWeight = FontWeight.Medium
-        )
-        IconButton(onClick = onIncrease, modifier = Modifier.size(22.dp)) {
-            Text("+", fontWeight = FontWeight.Bold)
+        if (isSyncing) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(18.dp)
+                    .padding(horizontal = 13.dp, vertical = 2.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else {
+            IconButton(onClick = onDecrease, modifier = Modifier.size(22.dp)) {
+                if (quantity <= 1) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "حذف",
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else {
+                    Text("–", fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(
+                "$quantity",
+                modifier = Modifier.padding(horizontal = 8.dp),
+                fontWeight = FontWeight.Medium
+            )
+            IconButton(onClick = onIncrease, modifier = Modifier.size(22.dp)) {
+                Text("+", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

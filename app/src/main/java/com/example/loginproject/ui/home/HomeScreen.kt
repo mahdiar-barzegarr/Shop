@@ -511,7 +511,7 @@ private val bottomNavItems = listOf(
 @Composable
 fun AppBottomBar(navController: NavController) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-    val selectedIndex = bottomNavItems.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
+    val selectedIndex = routeToTabIndex(currentRoute)
 
     Surface(
         shadowElevation = 12.dp,
@@ -527,9 +527,8 @@ fun AppBottomBar(navController: NavController) {
         ) {
             val itemWidth = maxWidth / bottomNavItems.size
 
-            // ایندیکیتور متحرک پشت تب فعال
             val indicatorOffset by animateDpAsState(
-                targetValue = itemWidth * selectedIndex,
+                targetValue = itemWidth * selectedIndex.coerceAtLeast(0),
                 animationSpec = spring(
                     dampingRatio = Dp.VisibilityThreshold.let { 0.7f },
                     stiffness = Spring.StiffnessMediumLow
@@ -537,7 +536,8 @@ fun AppBottomBar(navController: NavController) {
                 label = "indicatorOffset"
             )
 
-            Box(
+            AnimatedVisibility(
+                visible = selectedIndex != -1,
                 modifier = Modifier
                     .offset(x = indicatorOffset)
                     .width(itemWidth)
@@ -584,6 +584,18 @@ fun AppBottomBar(navController: NavController) {
                 }
             }
         }
+    }
+}
+
+private fun routeToTabIndex(route: String?): Int {
+    if (route == null) return 0
+    return when {
+        route == "cart" -> 0
+        route == "category" || route.startsWith("category_products") -> 1
+        route == "home" -> 2
+        route == "favorite" -> 3
+        route == "profile" -> 4
+        else -> -1
     }
 }
 

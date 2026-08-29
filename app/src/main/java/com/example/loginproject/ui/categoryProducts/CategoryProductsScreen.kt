@@ -133,7 +133,7 @@ fun CategoryProductsScreen(
                     )
                     RoundIconButton(
                         icon = Icons.Filled.FilterList,
-                        onClick = { /* TODO: فیلترهای واقعی رو بعداً اضافه کن */ })
+                        onClick = { })
                 }
             }
 

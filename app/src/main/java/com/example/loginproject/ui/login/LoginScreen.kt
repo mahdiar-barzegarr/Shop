@@ -103,14 +103,6 @@ fun LoginScreen(
                     modifier = Modifier.size(22.dp)
                 )
             }
-
-            Text(
-                text = "Need help?",
-                color = BrandPurple,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.clickable { viewModel.onNeedHelpClick() }
-            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))

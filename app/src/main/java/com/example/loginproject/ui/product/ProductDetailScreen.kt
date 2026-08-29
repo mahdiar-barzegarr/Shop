@@ -1,9 +1,11 @@
 package com.example.loginproject.ui.product
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -434,11 +436,31 @@ private fun QuantityStepperBar(
             Icon(imageVector = Icons.Outlined.Remove, contentDescription = "کم کردن", tint = BrandPurple)
         }
 
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f)) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .weight(1f)
+                .height(28.dp)
+                .clip(RoundedCornerShape(6.dp))
+        ) {
             if (isSyncing) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), color = BrandPurple, strokeWidth = 2.dp)
             } else {
-                AnimatedContent(targetState = quantity, label = "quantityNumber") { q ->
+                AnimatedContent(
+                    targetState = quantity,
+                    transitionSpec = {
+                        val goingUp = targetState > initialState
+                        val enter = slideInVertically(
+                            animationSpec = tween(220)
+                        ) { height -> if (goingUp) height else -height } + fadeIn(tween(220))
+                        val exit = slideOutVertically(
+                            animationSpec = tween(220)
+                        ) { height -> if (goingUp) -height else height } + fadeOut(tween(150))
+
+                        enter.togetherWith(exit).using(SizeTransform(clip = false))
+                    },
+                    label = "quantityNumber"
+                ) { q ->
                     Text(text = q.toString(), color = BrandPurple, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }

@@ -64,7 +64,6 @@ fun CategoriesScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
 
-    // چون این صفحه از پایین‌بار انتخاب شده، تب فعلی همیشه "Categories" (اندیس ۱) هست
     var selectedTab by remember { mutableIntStateOf(1) }
 
     Scaffold(

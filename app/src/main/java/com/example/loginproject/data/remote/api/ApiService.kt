@@ -3,6 +3,7 @@ package com.example.loginproject.data.remote.api
 import com.example.loginproject.data.remote.ApiConfig
 import com.example.loginproject.data.remote.request.AddAddressRequest
 import com.example.loginproject.data.remote.request.AddCartItemRequest
+import com.example.loginproject.data.remote.request.ChangePasswordRequest
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.data.remote.request.UserCartResponse
@@ -20,6 +21,7 @@ import com.example.loginproject.models.LoginResponseModel
 import com.example.loginproject.models.RefreshRequest
 import com.example.loginproject.models.RefreshResponseModel
 import com.example.loginproject.models.RegisterResponseModel
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -76,6 +78,9 @@ interface ApiService {
     suspend fun removeFavorite(
         @Path("favoriteEntryId") favoriteEntryId: Int
     ): Response<Unit>
+
+    @POST("user_change_password/")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ResponseBody>
 
     @GET
     suspend fun cartCheckout(@Url url: String): CartCheckoutResponse

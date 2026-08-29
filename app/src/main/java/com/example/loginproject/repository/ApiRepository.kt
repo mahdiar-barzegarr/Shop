@@ -4,6 +4,7 @@ import com.example.loginproject.data.remote.ApiConfig
 import com.example.loginproject.data.remote.api.ApiService
 import com.example.loginproject.data.remote.request.AddAddressRequest
 import com.example.loginproject.data.remote.request.AddCartItemRequest
+import com.example.loginproject.data.remote.request.ChangePasswordRequest
 import com.example.loginproject.data.remote.request.LoginRequest
 import com.example.loginproject.data.remote.request.RegisterRequest
 import com.example.loginproject.data.remote.request.UserCartResponse
@@ -23,6 +24,7 @@ import com.example.loginproject.models.RefreshRequest
 import com.example.loginproject.models.RefreshResponseModel
 import com.example.loginproject.models.RegisterResponseModel
 import jakarta.inject.Inject
+import okhttp3.ResponseBody
 import retrofit2.Response
 
 class ApiRepository @Inject constructor(
@@ -97,6 +99,17 @@ class ApiRepository @Inject constructor(
 
     suspend fun removeFavorite(favoriteEntryId: Int): Response<Unit> {
         return api.removeFavorite(favoriteEntryId)
+    }
+
+
+    suspend fun changePassword(
+        oldPassword: String,
+        newPassword: String,
+        confirmPassword: String
+    ): Response<ResponseBody> {
+        return api.changePassword(
+            ChangePasswordRequest(oldPassword, newPassword, confirmPassword)
+        )
     }
 
 

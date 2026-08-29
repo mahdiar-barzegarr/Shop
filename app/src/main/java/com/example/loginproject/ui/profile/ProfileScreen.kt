@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun ProfileScreen(
     onNavigateToLogin: () -> Unit = {},
     onNavigateToAddresses: () -> Unit = {},
+    onNavigateToChangePassword: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
     navController: NavController
 ) {
@@ -101,6 +102,12 @@ fun ProfileScreen(
                     iconBg = Color(0xFFDDF3E4),
                     label = "Addresses",
                     onClick = onNavigateToAddresses
+                )
+                ProfileMenuRow(
+                    icon = Icons.Default.Lock,
+                    iconBg = Color(0xFFFDE9D9),
+                    label = "Change Password",
+                    onClick = onNavigateToChangePassword
                 )
             }
 
